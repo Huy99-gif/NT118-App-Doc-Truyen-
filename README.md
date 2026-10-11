@@ -58,7 +58,3 @@
 - **Database:** MongoDB / PostgreSQL / Firebase Firestore / SQLite (Offline Cache)
 
 ---
-
-## 📝 Giấy Phép & Bản Quyền
-
-Dự án thuộc quyền sở hữu của nhóm sinh viên môn NT118. Vui lòng không sao chép khi chưa được sự đồng ý.
