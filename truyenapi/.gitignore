@@ -1,0 +1,22 @@
+# Backend (Maven)
+target/
+*.log
+
+# Bí mật và cài đặt riêng của máy
+.env
+*.env
+application-local.properties
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Android (dùng sau)
+android-app/build/
+android-app/.gradle/
+android-app/local.properties
+
+# Hệ điều hành
+Thumbs.db
+.DS_Store
