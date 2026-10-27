@@ -35,3 +35,7 @@ google-services.json
 
 # Android Profiling
 *.hprof
+
+# Bao cao va ngu canh lam viec, khong dua len repo
+report/
+task/
