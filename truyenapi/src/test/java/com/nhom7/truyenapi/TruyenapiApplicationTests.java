@@ -9,5 +9,4 @@ class TruyenapiApplicationTests {
 	@Test
 	void contextLoads() {
 	}
-
 }

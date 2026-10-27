@@ -1,5 +1,6 @@
 package com.nhom7.truyenapi.config;
 
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,9 +16,11 @@ import java.util.List;
 @Component
 public class JwtFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
+    private final SecurityErrorResponseWriter errorResponseWriter;
 
-    public JwtFilter(JwtUtil jwtUtil) {
+    public JwtFilter(JwtUtil jwtUtil, SecurityErrorResponseWriter errorResponseWriter) {
         this.jwtUtil = jwtUtil;
+        this.errorResponseWriter = errorResponseWriter;
     }
 
     @Override
@@ -27,10 +30,14 @@ public class JwtFilter extends OncePerRequestFilter {
         String header = request.getHeader("Authorization");
         if (header != null && header.startsWith("Bearer ")) {
             String token = header.substring(7);
-            if (jwtUtil.isValid(token)) {
+            try {
                 String email = jwtUtil.extractEmail(token);
                 var auth = new UsernamePasswordAuthenticationToken(email, null, List.of());
                 SecurityContextHolder.getContext().setAuthentication(auth);
+            } catch (JwtException | IllegalArgumentException exception) {
+                SecurityContextHolder.clearContext();
+                errorResponseWriter.writeUnauthorizedToken(response);
+                return;
             }
         }
         chain.doFilter(request, response);
