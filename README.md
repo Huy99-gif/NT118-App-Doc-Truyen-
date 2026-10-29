@@ -4,7 +4,7 @@
 
 ---
 
-## 👥 Thành Viên Nhóm
+## Thành Viên Nhóm
 
 | MSSV | Họ và Tên |
 | :--- | :--- |
@@ -14,44 +14,44 @@
 
 ---
 
-## 🚀 Tính Năng Chính
+## Tính Năng Chính
 
-### 1. 🔐 Xác thực tài khoản
+### 1. Xác thực tài khoản
 - Đăng nhập & Đăng ký tài khoản người dùng.
 - Quên mật khẩu & Phục hồi tài khoản qua Email verification.
 
-### 2. 🏠 Trang chủ & Tìm kiếm
+### 2. Trang chủ & Tìm kiếm
 - Hiển thị danh mục truyện phong phú: **Nổi bật**, **Mới cập nhật**, **Phân loại theo thể loại**.
 - Tìm kiếm & Lọc truyện thông minh theo **Tên truyện**, **Tác giả**, hoặc **Trạng thái** (Đang tiến hành / Hoàn thành).
 
-### 3. 📖 Chi tiết truyện
+### 3. Chi tiết truyện
 - Xem thông tin tổng quan: Ảnh bìa, Tác giả, Tóm tắt nội dung, Số lượng chương.
 - Danh sách mục lục chương giúp tra cứu và chuyển đến chương mong muốn dễ dàng.
 
-### 4. 📚 Màn hình đọc truyện
+### 4. Màn hình đọc truyện
 - Hiển thị nội dung mượt mà, hỗ trợ chuyển chương linh hoạt.
 - Tùy chỉnh giao diện đọc theo sở thích:
   - Điều chỉnh **Cỡ chữ** và **Font chữ**.
   - Đổi chế độ màu nền: **Sáng (Light)**, **Tối (Dark mode)**, **Vàng dịu mắt (Sepia)**.
 
-### 5. 📡 Đọc ngoại tuyến (Offline)
+### 5. Đọc ngoại tuyến (Offline)
 - Tải trước các chương truyện về bộ nhớ thiết bị.
 - Đọc nội dung mượt mà ngay cả khi không có kết nối Internet.
 
-### 6. 🔖 Lịch sử & Bookmark
+### 6. Lịch sử & Bookmark
 - Tự động lưu vị trí dòng chữ / đoạn văn đang đọc dở.
 - Quản lý lịch sử duyệt truyện gần đây.
 
-### 7. 📚 Tủ sách cá nhân
+### 7. Tủ sách cá nhân
 - Quản lý danh sách các bộ truyện đang theo dõi, yêu thích hoặc muốn đọc sau.
 
-### 8. 💬 Tương tác cộng đồng
+### 8. Tương tác cộng đồng
 - Viết bình luận và thảo luận dưới từng truyện/chương.
-- Đánh giá xếp hạng số sao ⭐ cho tác phẩm.
+- Đánh giá xếp hạng số sao cho tác phẩm.
 
 ---
 
-## 🛠️ Công Nghệ Sử Dụng (Dự kiến)
+## Công Nghệ Sử Dụng (Dự kiến)
 
 - **Frontend / Mobile App:** React Native / Flutter / Android Native (Java/Kotlin)
 - **Backend:** Node.js / Firebase / Laravel / ASP.NET
