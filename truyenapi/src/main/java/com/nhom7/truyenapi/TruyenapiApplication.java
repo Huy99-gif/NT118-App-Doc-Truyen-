@@ -14,5 +14,4 @@ public class TruyenapiApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(TruyenapiApplication.class, args);
 	}
-
 }
