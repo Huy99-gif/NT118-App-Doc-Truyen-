@@ -1,3 +1,19 @@
 <resources>
-    <string name="app_name">android_app</string>
+    <string name="app_name">Đọc Truyện Online</string>
+    <string name="login_welcome_title">Xin chào! 👋</string>
+    <string name="login_welcome_subtitle">Đăng nhập để tiếp tục trải nghiệm đọc truyện tuyệt vời</string>
+    <string name="hint_email">Email / Tên đăng nhập</string>
+    <string name="hint_password">Mật khẩu</string>
+    <string name="forgot_password">Quên mật khẩu?</string>
+    <string name="btn_login">Đăng Nhập</string>
+    <string name="divider_or">Hoặc</string>
+    <string name="btn_guest_login">Đăng nhập với tư cách khách</string>
+    <string name="dont_have_account">Chưa có tài khoản?</string>
+    <string name="btn_register">Đăng ký ngay</string>
+    <string name="error_empty_email">Vui lòng nhập email hoặc tên đăng nhập</string>
+    <string name="error_empty_password">Vui lòng nhập mật khẩu</string>
+    <string name="toast_login_success">Đăng nhập thành công!</string>
+    <string name="toast_forgot_password">Mở màn hình Quên mật khẩu</string>
+    <string name="toast_guest_login">Đăng nhập với tư cách Khách!</string>
+    <string name="toast_register">Mở màn hình Đăng ký</string>
 </resources>
