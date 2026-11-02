@@ -6,8 +6,29 @@ build/
 # Local configuration file (sdk path, etc)
 local.properties
 
-# Log/OS Files
+# Local secrets and generated configuration
+.env
+**/.env
+**/secrets.properties
+**/target/
+
+# Local and internal working documents
+/report/
+/task/
+/ThongTin/
+.github/copilot-instructions.md
+.github/instructions/
+
+# IDE
+.vscode/*
+!.vscode/settings.json
+**/.vscode/*
+!**/.vscode/settings.json
+
+# Log/OS files
 *.log
+Thumbs.db
+.DS_Store
 
 # Android Studio generated files and folders
 captures/
