@@ -27,8 +27,13 @@ local.properties
 
 # Log/OS files
 *.log
+<<<<<<< HEAD
 Thumbs.db
 .DS_Store
+=======
+.env
+!.env.example
+>>>>>>> feature/initial-upload
 
 # Android Studio generated files and folders
 captures/
@@ -54,4 +59,8 @@ google-services.json
 
 # Android Profiling
 *.hprof
+
+# Bao cao va ngu canh lam viec, khong dua len repo
+report/
+task/
 **/secrets.properties.example
