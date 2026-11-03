@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:16
+    container_name: truyen-db
+    environment:
+      POSTGRES_USER: truyen
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      POSTGRES_DB: truyendb
+    ports:
+      - "5432:5432"
+    volumes:
+      - truyen_pgdata:/var/lib/postgresql/data
+
+volumes:
+  truyen_pgdata:
