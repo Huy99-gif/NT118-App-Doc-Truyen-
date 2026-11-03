@@ -4,14 +4,13 @@ build/
 .kotlin/
 
 # Local configuration file (sdk path, etc)
-local.properties
+**/local.properties
 
-<<<<<<< HEAD
 # Log/OS Files
 *.log
-=======
 # Local secrets and generated configuration
 .env
+secrets.properties
 **/.env
 **/secrets.properties
 **/target/
@@ -35,7 +34,6 @@ Thumbs.db
 .DS_Store
 .env
 !.env.example
->>>>>>> backend/feature/auth
 
 # Android Studio generated files and folders
 captures/
