@@ -29,7 +29,6 @@ local.properties
 *.log
 Thumbs.db
 .DS_Store
-.env
 !.env.example
 
 # Android Studio generated files and folders
