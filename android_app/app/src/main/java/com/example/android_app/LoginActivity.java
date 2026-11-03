@@ -1,5 +1,6 @@
 package com.example.android_app;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
@@ -70,7 +71,7 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void onForgotPasswordClicked() {
-        Toast.makeText(this, getString(R.string.toast_forgot_password), Toast.LENGTH_SHORT).show();
+        startActivity(new Intent(this, ForgotPasswordActivity.class));
     }
 
     private void onGuestLoginClicked() {
@@ -78,7 +79,7 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void onRegisterClicked() {
-        Toast.makeText(this, getString(R.string.toast_register), Toast.LENGTH_SHORT).show();
+        startActivity(new Intent(this, RegisterActivity.class));
     }
 
     private void showLoading(boolean isLoading) {
