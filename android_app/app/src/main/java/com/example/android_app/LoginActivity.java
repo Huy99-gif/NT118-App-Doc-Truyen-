@@ -59,14 +59,14 @@ public class LoginActivity extends AppCompatActivity {
 
         if (!isValid) return;
 
-        // Hiển thị trạng thái đang nạp dữ liệu
+        // Hiển thị trạng thái đang nạp dữ liệu (Mock login)
         showLoading(true);
 
-        // Giả lập kết nối API Đăng nhập backend
         binding.getRoot().postDelayed(() -> {
             showLoading(false);
-            Toast.makeText(this, getString(R.string.toast_login_success), Toast.LENGTH_SHORT).show();
-            // Chuyển sang MainActivity...
+            Toast.makeText(LoginActivity.this, getString(R.string.toast_login_success), Toast.LENGTH_SHORT).show();
+            startActivity(new Intent(LoginActivity.this, MainActivity.class));
+            finish();
         }, 1500);
     }
 
@@ -76,6 +76,9 @@ public class LoginActivity extends AppCompatActivity {
 
     private void onGuestLoginClicked() {
         Toast.makeText(this, getString(R.string.toast_guest_login), Toast.LENGTH_SHORT).show();
+        // Chuyển thẳng sang màn hình chính
+        startActivity(new Intent(this, MainActivity.class));
+        finish();
     }
 
     private void onRegisterClicked() {

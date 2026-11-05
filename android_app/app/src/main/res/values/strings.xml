@@ -55,6 +55,22 @@
     <string name="error_empty_display_name">Vui lòng nhập tên hiển thị</string>
     <string name="error_display_name_too_long">Tên hiển thị không được vượt quá 100 ký tự</string>
     <string name="toast_register_success">Đăng ký thành công! Hãy đăng nhập để tiếp tục.</string>
+
+    <!-- Màn hình chính -->
+    <string name="tab_home">Trang chủ</string>
+    <string name="tab_categories">Thể loại</string>
+    <string name="tab_library">Thư viện</string>
+    <string name="tab_account">Tài khoản</string>
+    <string name="search_hint">Tìm truyện, tác giả...</string>
+    <string name="filter_title">Lọc truyện</string>
+    <string name="empty_truyen">Chưa có truyện nào</string>
+    <string name="all">Tất cả</string>
+    <string name="hot">Nổi bật</string>
+    <string name="recent">Mới cập nhật</string>
+    <string name="latest">Chương mới nhất</string>
+    <string name="chapter_count">%d chương</string>
+    <string name="recently_reading">Đang đọc</string>
+
 </resources>
 
 
