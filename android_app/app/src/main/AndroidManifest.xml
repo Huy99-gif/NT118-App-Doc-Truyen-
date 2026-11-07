@@ -37,6 +37,14 @@
             android:name=".MainActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".StoryDetailActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ReaderActivity"
+            android:exported="false" />
+
     </application>
 
 </manifest>

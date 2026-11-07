@@ -1,12 +1,13 @@
 package com.example.android_app;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.android_app.adapter.StoryAdapter;
 import com.example.android_app.databinding.ActivityMainBinding;
@@ -35,14 +36,18 @@ public class MainActivity extends AppCompatActivity {
     private void setupToolbar() {
         setSupportActionBar(binding.toolbar);
         binding.toolbar.setTitleTextColor(getColor(R.color.text_primary));
-        binding.toolbar.setNavigationIcon(R.drawable.ic_search);
     }
 
     private void setupRecyclerView() {
         adapter = new StoryAdapter(story -> {
-            // TODO: mở màn hình chi tiết truyện
-            android.widget.Toast.makeText(this, "Chi tiết: " + story.getName(),
-                    android.widget.Toast.LENGTH_SHORT).show();
+            // Mở màn hình chi tiết truyện với dữ liệu được truyền qua Intent
+            Intent intent = new Intent(MainActivity.this, StoryDetailActivity.class);
+            intent.putExtra("story_id", story.getId());
+            intent.putExtra("story_name", story.getName());
+            intent.putExtra("story_author", story.getAuthor());
+            intent.putExtra("story_cover", story.getCoverUrl());
+            intent.putExtra("story_chapter_count", story.getChapterCount());
+            startActivity(intent);
         });
         binding.recyclerView.setLayoutManager(new GridLayoutManager(this, 1));
         binding.recyclerView.setAdapter(adapter);
@@ -52,20 +57,39 @@ public class MainActivity extends AppCompatActivity {
         binding.bottomNavigation.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
             if (id == R.id.nav_home) {
-                // Trang chủ
-            } else if (id == R.id.nav_categories) {
-                // Danh mục
+                showHomeContent();
+                return true;
             } else if (id == R.id.nav_library) {
-                // Thư viện
+                showFragment(new LibraryFragment());
+                return true;
             } else if (id == R.id.nav_account) {
-                // Tài khoản
+                showFragment(new ProfileFragment());
+                return true;
+            } else if (id == R.id.nav_categories) {
+                // [GIẢ LẬP] Màn hình Thể loại
+                Toast.makeText(this, "Màn hình Thể loại (Đang phát triển)", Toast.LENGTH_SHORT).show();
             }
             return true;
         });
         binding.bottomNavigation.setSelectedItemId(R.id.nav_home);
     }
 
+    private void showHomeContent() {
+        binding.layoutHomeContent.setVisibility(View.VISIBLE);
+        binding.fragmentContainer.setVisibility(View.GONE);
+    }
+
+    private void showFragment(Fragment fragment) {
+        binding.layoutHomeContent.setVisibility(View.GONE);
+        binding.fragmentContainer.setVisibility(View.VISIBLE);
+        getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.fragmentContainer, fragment)
+                .commit();
+    }
+
     private void loadDemoData() {
+        // [GIẢ LẬP API] Sau này nối GET /stories từ Backend
         List<Story> stories = new ArrayList<>();
         stories.add(new Story("1", "Cố Ấy Tên Ai", "Nhã Ngà",
                 "https://i.pinimg.com/564x19/7b/19/95/19799591b014a7e0e677579f5653f82a.jpg",
