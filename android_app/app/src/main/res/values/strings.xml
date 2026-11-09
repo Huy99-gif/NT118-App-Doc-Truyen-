@@ -1,0 +1,76 @@
+<resources>
+    <string name="app_name">Đọc Truyện Online</string>
+    <string name="login_welcome_title">Xin chào! 👋</string>
+    <string name="login_welcome_subtitle">Đăng nhập để tiếp tục trải nghiệm đọc truyện tuyệt vời</string>
+    <string name="hint_email">Email / Tên đăng nhập</string>
+    <string name="hint_password">Mật khẩu</string>
+    <string name="forgot_password">Quên mật khẩu?</string>
+    <string name="btn_login">Đăng Nhập</string>
+    <string name="divider_or">Hoặc</string>
+    <string name="btn_guest_login">Đăng nhập với tư cách khách</string>
+    <string name="dont_have_account">Chưa có tài khoản?</string>
+    <string name="btn_register">Đăng ký ngay</string>
+    <string name="error_empty_email">Vui lòng nhập email hoặc tên đăng nhập</string>
+    <string name="error_empty_password">Vui lòng nhập mật khẩu</string>
+    <string name="toast_login_success">Đăng nhập thành công!</string>
+    <string name="toast_forgot_password">Mở màn hình Quên mật khẩu</string>
+    <string name="toast_guest_login">Đăng nhập với tư cách Khách!</string>
+    <string name="toast_register">Mở màn hình Đăng ký</string>
+
+    <string name="btn_back">Quay lại</string>
+    <string name="forgot_password_title">Quên mật khẩu</string>
+    <string name="forgot_password_subtitle">Nhập email đã đăng ký để nhận mã xác minh và lấy lại mật khẩu</string>
+    <string name="reset_password_title">Đặt lại mật khẩu</string>
+    <string name="reset_password_subtitle">Nhập mã xác minh đã gửi đến email và mật khẩu mới</string>
+    <string name="hint_email_only">Email</string>
+    <string name="hint_reset_token">Mã xác minh</string>
+    <string name="helper_reset_token">Mã được gửi tới email của bạn</string>
+    <string name="hint_new_password">Mật khẩu mới</string>
+    <string name="hint_confirm_password">Xác nhận mật khẩu mới</string>
+    <string name="btn_send_code">Gửi mã xác minh</string>
+    <string name="btn_reset_password">Đặt lại mật khẩu</string>
+    <string name="btn_resend_code">Gửi lại mã</string>
+    <string name="remember_password">Nhớ mật khẩu rồi?</string>
+    <string name="btn_back_to_login">Đăng nhập</string>
+    <string name="forgot_password_email_sent">Mã xác minh đã được gửi tới %1$s</string>
+    <string name="error_empty_email_only">Vui lòng nhập email</string>
+    <string name="error_invalid_email">Email không hợp lệ</string>
+    <string name="error_empty_token">Vui lòng nhập mã xác minh</string>
+    <string name="error_invalid_token">Mã xác minh không hợp lệ</string>
+    <string name="error_password_too_short">Mật khẩu phải có ít nhất 6 ký tự</string>
+    <string name="error_password_too_long">Mật khẩu không được vượt quá 72 ký tự</string>
+    <string name="error_empty_confirm_password">Vui lòng xác nhận mật khẩu mới</string>
+    <string name="error_password_mismatch">Mật khẩu xác nhận không khớp</string>
+    <string name="toast_code_sent">Nếu email tồn tại, chúng tôi đã gửi hướng dẫn đặt lại mật khẩu.</string>
+    <string name="toast_code_resent">Đã gửi lại mã xác minh.</string>
+    <string name="toast_reset_success">Đặt lại mật khẩu thành công.</string>
+
+    <string name="register_title">Tạo tài khoản</string>
+    <string name="register_subtitle">Đăng ký để lưu tủ sách, đánh dấu và tiếp tục đọc truyện</string>
+    <string name="hint_display_name">Tên hiển thị</string>
+    <string name="hint_confirm_register_password">Xác nhận mật khẩu</string>
+    <string name="btn_create_account">Đăng Ký</string>
+    <string name="already_have_account">Đã có tài khoản?</string>
+    <string name="error_empty_confirm_register_password">Vui lòng xác nhận mật khẩu</string>
+    <string name="error_empty_display_name">Vui lòng nhập tên hiển thị</string>
+    <string name="error_display_name_too_long">Tên hiển thị không được vượt quá 100 ký tự</string>
+    <string name="toast_register_success">Đăng ký thành công! Hãy đăng nhập để tiếp tục.</string>
+
+    <!-- Màn hình chính -->
+    <string name="tab_home">Trang chủ</string>
+    <string name="tab_categories">Thể loại</string>
+    <string name="tab_library">Thư viện</string>
+    <string name="tab_account">Tài khoản</string>
+    <string name="search_hint">Tìm truyện, tác giả...</string>
+    <string name="filter_title">Lọc truyện</string>
+    <string name="empty_truyen">Chưa có truyện nào</string>
+    <string name="all">Tất cả</string>
+    <string name="hot">Nổi bật</string>
+    <string name="recent">Mới cập nhật</string>
+    <string name="latest">Chương mới nhất</string>
+    <string name="chapter_count">%d chương</string>
+    <string name="recently_reading">Đang đọc</string>
+
+</resources>
+
+

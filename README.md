@@ -57,4 +57,31 @@
 - **Backend:** Node.js / Firebase / Laravel / ASP.NET
 - **Database:** MongoDB / PostgreSQL / Firebase Firestore / SQLite (Offline Cache)
 
+## Chạy backend
+
+Backend hiện nằm trong thư mục `truyenapi`, dùng Java 17, Spring Boot và PostgreSQL. Trước khi chạy, khởi động PostgreSQL theo cấu hình trong `deploy/docker-compose.yml` và đặt `JWT_SECRET` trong PowerShell. Khóa phải có tối thiểu 32 ký tự; hãy dùng giá trị ngẫu nhiên riêng cho môi trường của bạn, không dùng chuỗi mẫu hoặc commit khóa vào Git.
+
+```powershell
+$env:JWT_SECRET = "<your-random-secret-at-least-32-characters>"
+cd .\truyenapi
+.\mvnw.cmd spring-boot:run
+```
+
+`JWT_SECRET` chỉ được thiết lập cho cửa sổ PowerShell hiện tại. Nếu biến bị thiếu hoặc khóa ngắn hơn 32 ký tự, backend sẽ dừng khi khởi tạo cấu hình JWT. File `.env.example` ghi tên biến cần thiết nhưng ứng dụng không tự động nạp file `.env`.
+
+## Cấu hình lần đầu
+
+1. Copy `truyenapi/secrets.properties.example` thành `truyenapi/secrets.properties`.
+2. Copy `.env.example` thành `.env`, rồi điền `DB_PASSWORD` bằng mật khẩu PostgreSQL bạn chọn. Dùng cùng mật khẩu đó trong `truyenapi/secrets.properties`. File `.env` đã bị Git ignore.
+3. Điền JWT secret dài ít nhất 32 ký tự vào `truyenapi/secrets.properties`.
+4. Gửi email quên mật khẩu là tùy chọn; nếu cần, hãy dùng Gmail và App Password của chính bạn.
+5. Không commit, không chụp màn hình và không gửi `.env` hoặc `secrets.properties` cho người khác.
+6. Chạy các lệnh sau từ thư mục gốc repo:
+
+   ```powershell
+   docker compose --env-file .\.env -f .\deploy\docker-compose.yml up -d
+   cd .\truyenapi
+   .\mvnw.cmd spring-boot:run
+   ```
+
 ---
