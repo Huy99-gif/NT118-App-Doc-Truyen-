@@ -38,6 +38,15 @@ public class User {
     @OneToMany(mappedBy = "user")
     private List<Rating> ratings = new ArrayList<>();
 
+    @Column(nullable = false, unique = true)
+    private String email;
+
+    @Column(name = "password_hash", nullable = false)
+    private String passwordHash;
+
+    @Column(name = "display_name")
+    private String displayName;
+
     public Long getId() { return id; }
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }

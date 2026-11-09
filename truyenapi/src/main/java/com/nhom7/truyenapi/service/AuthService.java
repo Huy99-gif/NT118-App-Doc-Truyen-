@@ -17,6 +17,12 @@ import com.nhom7.truyenapi.repository.PasswordResetTokenRepository;
 import com.nhom7.truyenapi.repository.UserRepository;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.beans.factory.annotation.Value;
+import com.nhom7.truyenapi.dto.RegisterRequest;
+import com.nhom7.truyenapi.dto.RegisterResponse;
+import com.nhom7.truyenapi.dto.UserResponse;
+import com.nhom7.truyenapi.entity.User;
+import com.nhom7.truyenapi.exception.ApiException;
+import com.nhom7.truyenapi.repository.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -32,6 +38,7 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
+
 import java.util.UUID;
 
 @Service
@@ -62,6 +69,16 @@ public class AuthService {
         this.jwtUtil = jwtUtil;
         this.eventPublisher = eventPublisher;
         this.resetTokenExpiryMinutes = resetTokenExpiryMinutes;
+
+    private final UserRepository users;
+    private final PasswordEncoder encoder;
+    private final JwtUtil jwtUtil;
+    private final String dummyPasswordHash;
+
+    public AuthService(UserRepository users, PasswordEncoder encoder, JwtUtil jwtUtil) {
+        this.users = users;
+        this.encoder = encoder;
+        this.jwtUtil = jwtUtil;
         this.dummyPasswordHash = encoder.encode(UUID.randomUUID().toString());
     }
 
