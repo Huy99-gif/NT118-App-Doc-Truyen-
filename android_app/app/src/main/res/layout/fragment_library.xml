@@ -12,7 +12,7 @@
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/surface">
+        android:background="@color/bg_app">
 
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"
@@ -34,6 +34,7 @@
             android:id="@+id/tabLayoutLibrary"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:background="@color/bg_app"
             app:tabIndicatorColor="@color/primary"
             app:tabMode="fixed"
             app:tabSelectedTextColor="@color/primary"

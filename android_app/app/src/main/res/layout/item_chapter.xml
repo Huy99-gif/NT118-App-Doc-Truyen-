@@ -6,6 +6,7 @@
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="16dp"
     android:layout_marginVertical="4dp"
+    app:cardBackgroundColor="@color/surface"
     app:cardCornerRadius="8dp"
     app:cardElevation="0dp"
     app:strokeColor="@color/divider"
@@ -48,6 +49,7 @@
             android:layout_width="20dp"
             android:layout_height="20dp"
             android:src="@drawable/ic_chevron_right"
+            app:tint="@color/primary"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent" />

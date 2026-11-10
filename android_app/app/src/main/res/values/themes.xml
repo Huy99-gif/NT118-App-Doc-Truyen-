@@ -5,7 +5,7 @@
         <item name="colorPrimaryDark">@color/primary_dark</item>
         <item name="colorSecondary">@color/accent</item>
         <item name="android:statusBarColor">@color/bg_app</item>
-        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightStatusBar">false</item>
         <item name="android:windowBackground">@color/bg_app</item>
     </style>
 
@@ -17,15 +17,17 @@
         <item name="boxCornerRadiusTopEnd">12dp</item>
         <item name="boxCornerRadiusBottomStart">12dp</item>
         <item name="boxCornerRadiusBottomEnd">12dp</item>
+        <item name="boxBackgroundColor">@color/surface</item>
         <item name="boxStrokeColor">@color/primary</item>
         <item name="hintTextColor">@color/primary</item>
+        <item name="android:textColorHint">@color/text_hint</item>
     </style>
 
     <!-- Custom Style for Primary Button -->
     <style name="Widget.TruyenApp.Button.Primary" parent="Widget.Material3.Button">
         <item name="cornerRadius">12dp</item>
         <item name="android:backgroundTint">@color/primary</item>
-        <item name="android:textColor">@color/surface</item>
+        <item name="android:textColor">#0A1128</item>
         <item name="android:textSize">16sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:paddingTop">14dp</item>
@@ -40,5 +42,10 @@
         <item name="android:textSize">15sp</item>
         <item name="android:paddingTop">12dp</item>
         <item name="android:paddingBottom">12dp</item>
+    </style>
+
+    <!-- Active Indicator Style for BottomNavigationView -->
+    <style name="Widget.TruyenApp.BottomNavActiveIndicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
+        <item name="android:color">@color/primary_light</item>
     </style>
 </resources>

@@ -1,6 +1,6 @@
 <resources>
     <string name="app_name">Đọc Truyện Online</string>
-    <string name="login_welcome_title">Xin chào! 👋</string>
+    <string name="login_welcome_title">Chào mừng bạn đến với app!!!</string>
     <string name="login_welcome_subtitle">Đăng nhập để tiếp tục trải nghiệm đọc truyện tuyệt vời</string>
     <string name="hint_email">Email / Tên đăng nhập</string>
     <string name="hint_password">Mật khẩu</string>
