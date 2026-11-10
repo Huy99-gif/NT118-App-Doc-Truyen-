@@ -2,7 +2,7 @@
     <string name="app_name">Đọc Truyện Online</string>
     <string name="login_welcome_title">Chào mừng bạn đến với app!!!</string>
     <string name="login_welcome_subtitle">Đăng nhập để tiếp tục trải nghiệm đọc truyện tuyệt vời</string>
-    <string name="hint_email">Email / Tên đăng nhập</string>
+    <string name="hint_email">Email</string>
     <string name="hint_password">Mật khẩu</string>
     <string name="forgot_password">Quên mật khẩu?</string>
     <string name="btn_login">Đăng Nhập</string>
@@ -13,6 +13,13 @@
     <string name="error_empty_email">Vui lòng nhập email hoặc tên đăng nhập</string>
     <string name="error_empty_password">Vui lòng nhập mật khẩu</string>
     <string name="toast_login_success">Đăng nhập thành công!</string>
+    <string name="error_login_response">Backend trả về dữ liệu đăng nhập không hợp lệ.</string>
+    <string name="error_login_failed">Đăng nhập thất bại. Vui lòng thử lại.</string>
+    <string name="error_register_failed">Đăng ký thất bại. Vui lòng thử lại.</string>
+    <string name="error_forgot_password_failed">Không gửi được yêu cầu đặt lại mật khẩu.</string>
+    <string name="error_reset_password_failed">Không đặt lại được mật khẩu.</string>
+    <string name="error_profile_load_failed">Không tải được thông tin tài khoản.</string>
+    <string name="error_server_unreachable">Không kết nối được backend. Hãy kiểm tra backend và địa chỉ API.</string>
     <string name="toast_forgot_password">Mở màn hình Quên mật khẩu</string>
     <string name="toast_guest_login">Đăng nhập với tư cách Khách!</string>
     <string name="toast_register">Mở màn hình Đăng ký</string>
@@ -32,7 +39,7 @@
     <string name="btn_resend_code">Gửi lại mã</string>
     <string name="remember_password">Nhớ mật khẩu rồi?</string>
     <string name="btn_back_to_login">Đăng nhập</string>
-    <string name="forgot_password_email_sent">Mã xác minh đã được gửi tới %1$s</string>
+    <string name="forgot_password_email_sent">Nếu email đã đăng ký, hướng dẫn đặt lại mật khẩu sẽ được gửi tới %1$s</string>
     <string name="error_empty_email_only">Vui lòng nhập email</string>
     <string name="error_invalid_email">Email không hợp lệ</string>
     <string name="error_empty_token">Vui lòng nhập mã xác minh</string>
@@ -55,6 +62,8 @@
     <string name="error_empty_display_name">Vui lòng nhập tên hiển thị</string>
     <string name="error_display_name_too_long">Tên hiển thị không được vượt quá 100 ký tự</string>
     <string name="toast_register_success">Đăng ký thành công! Hãy đăng nhập để tiếp tục.</string>
+    <string name="profile_guest_name">Khách</string>
+    <string name="profile_reader_role">Độc giả</string>
 
     <!-- Màn hình chính -->
     <string name="tab_home">Trang chủ</string>
@@ -72,5 +81,3 @@
     <string name="recently_reading">Đang đọc</string>
 
 </resources>
-
-

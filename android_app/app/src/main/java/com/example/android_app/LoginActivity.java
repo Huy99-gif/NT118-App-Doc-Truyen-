@@ -9,10 +9,19 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.android_app.databinding.ActivityLoginBinding;
+import com.example.android_app.model.LoginRequest;
+import com.example.android_app.model.LoginResponse;
+import com.example.android_app.network.ApiClient;
+import com.example.android_app.util.ApiErrorParser;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class LoginActivity extends AppCompatActivity {
 
     private ActivityLoginBinding binding;
+    private Call<LoginResponse> loginCall;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -21,6 +30,14 @@ public class LoginActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
 
         setupListeners();
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (loginCall != null) {
+            loginCall.cancel();
+        }
+        super.onDestroy();
     }
 
     private void setupListeners() {
@@ -39,7 +56,7 @@ public class LoginActivity extends AppCompatActivity {
 
     private void handleLogin() {
         String email = binding.etEmail.getText() != null ? binding.etEmail.getText().toString().trim() : "";
-        String password = binding.etPassword.getText() != null ? binding.etPassword.getText().toString().trim() : "";
+        String password = binding.etPassword.getText() != null ? binding.etPassword.getText().toString() : "";
 
         // Reset lỗi hiển thị trước đó
         binding.tilEmail.setError(null);
@@ -59,15 +76,40 @@ public class LoginActivity extends AppCompatActivity {
 
         if (!isValid) return;
 
-        // Hiển thị trạng thái đang nạp dữ liệu (Mock login)
         showLoading(true);
+        loginCall = ApiClient.auth().login(new LoginRequest(email, password));
+        loginCall.enqueue(new Callback<LoginResponse>() {
+            @Override
+            public void onResponse(Call<LoginResponse> call, Response<LoginResponse> response) {
+                if (isFinishing() || isDestroyed()) return;
+                showLoading(false);
 
-        binding.getRoot().postDelayed(() -> {
-            showLoading(false);
-            Toast.makeText(LoginActivity.this, getString(R.string.toast_login_success), Toast.LENGTH_SHORT).show();
-            startActivity(new Intent(LoginActivity.this, MainActivity.class));
-            finish();
-        }, 1500);
+                if (!response.isSuccessful()) {
+                    Toast.makeText(LoginActivity.this,
+                            ApiErrorParser.getMessage(response, getString(R.string.error_login_failed)),
+                            Toast.LENGTH_LONG).show();
+                    return;
+                }
+
+                LoginResponse loginResponse = response.body();
+                if (loginResponse == null || TextUtils.isEmpty(loginResponse.getToken())) {
+                    Toast.makeText(LoginActivity.this, R.string.error_login_response, Toast.LENGTH_LONG).show();
+                    return;
+                }
+
+                AuthPreferences.saveToken(LoginActivity.this, loginResponse.getToken());
+                Toast.makeText(LoginActivity.this, R.string.toast_login_success, Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(LoginActivity.this, MainActivity.class));
+                finish();
+            }
+
+            @Override
+            public void onFailure(Call<LoginResponse> call, Throwable throwable) {
+                if (isFinishing() || isDestroyed() || call.isCanceled()) return;
+                showLoading(false);
+                Toast.makeText(LoginActivity.this, R.string.error_server_unreachable, Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
     private void onForgotPasswordClicked() {

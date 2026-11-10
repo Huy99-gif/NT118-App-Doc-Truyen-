@@ -11,6 +11,15 @@ import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.android_app.databinding.ActivityForgotPasswordBinding;
+import com.example.android_app.model.ForgotPasswordRequest;
+import com.example.android_app.model.MessageResponse;
+import com.example.android_app.model.ResetPasswordRequest;
+import com.example.android_app.network.ApiClient;
+import com.example.android_app.util.ApiErrorParser;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class ForgotPasswordActivity extends AppCompatActivity {
 
@@ -20,6 +29,8 @@ public class ForgotPasswordActivity extends AppCompatActivity {
 
     private ActivityForgotPasswordBinding binding;
     private String verifiedEmail = "";
+    private Call<MessageResponse> forgotPasswordCall;
+    private Call<MessageResponse> resetPasswordCall;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,6 +41,17 @@ public class ForgotPasswordActivity extends AppCompatActivity {
         setupListeners();
         setupBackNavigation();
         showEmailStep();
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (forgotPasswordCall != null) {
+            forgotPasswordCall.cancel();
+        }
+        if (resetPasswordCall != null) {
+            resetPasswordCall.cancel();
+        }
+        super.onDestroy();
     }
 
     private void setupListeners() {
@@ -63,12 +85,7 @@ public class ForgotPasswordActivity extends AppCompatActivity {
         }
 
         showSendCodeLoading(true);
-        binding.getRoot().postDelayed(() -> {
-            showSendCodeLoading(false);
-            verifiedEmail = email;
-            showResetStep();
-            Toast.makeText(this, getString(R.string.toast_code_sent), Toast.LENGTH_SHORT).show();
-        }, 1500);
+        requestPasswordReset(email, false);
     }
 
     private void handleResendCode() {
@@ -78,16 +95,13 @@ public class ForgotPasswordActivity extends AppCompatActivity {
         }
 
         binding.tvResendCode.setEnabled(false);
-        binding.getRoot().postDelayed(() -> {
-            binding.tvResendCode.setEnabled(true);
-            Toast.makeText(this, getString(R.string.toast_code_resent), Toast.LENGTH_SHORT).show();
-        }, 1200);
+        requestPasswordReset(verifiedEmail, true);
     }
 
     private void handleResetPassword() {
         String token = getText(binding.etToken);
-        String newPassword = getText(binding.etNewPassword);
-        String confirmPassword = getText(binding.etConfirmPassword);
+        String newPassword = getRawText(binding.etNewPassword);
+        String confirmPassword = getRawText(binding.etConfirmPassword);
 
         binding.tilToken.setError(null);
         binding.tilNewPassword.setError(null);
@@ -103,7 +117,7 @@ public class ForgotPasswordActivity extends AppCompatActivity {
             isValid = false;
         }
 
-        if (TextUtils.isEmpty(newPassword)) {
+        if (TextUtils.isEmpty(newPassword.trim())) {
             binding.tilNewPassword.setError(getString(R.string.error_empty_password));
             isValid = false;
         } else if (newPassword.length() < MIN_PASSWORD_LENGTH) {
@@ -114,7 +128,7 @@ public class ForgotPasswordActivity extends AppCompatActivity {
             isValid = false;
         }
 
-        if (TextUtils.isEmpty(confirmPassword)) {
+        if (TextUtils.isEmpty(confirmPassword.trim())) {
             binding.tilConfirmPassword.setError(getString(R.string.error_empty_confirm_password));
             isValid = false;
         } else if (!TextUtils.isEmpty(newPassword) && !newPassword.equals(confirmPassword)) {
@@ -127,11 +141,79 @@ public class ForgotPasswordActivity extends AppCompatActivity {
         }
 
         showResetLoading(true);
-        binding.getRoot().postDelayed(() -> {
-            showResetLoading(false);
-            Toast.makeText(this, getString(R.string.toast_reset_success), Toast.LENGTH_SHORT).show();
-            finish();
-        }, 1500);
+        resetPasswordCall = ApiClient.auth().resetPassword(
+                new ResetPasswordRequest(token, newPassword));
+        resetPasswordCall.enqueue(new Callback<MessageResponse>() {
+            @Override
+            public void onResponse(Call<MessageResponse> call, Response<MessageResponse> response) {
+                if (isFinishing() || isDestroyed()) return;
+                showResetLoading(false);
+
+                if (!response.isSuccessful()) {
+                    Toast.makeText(ForgotPasswordActivity.this,
+                            ApiErrorParser.getMessage(response, getString(R.string.error_reset_password_failed)),
+                            Toast.LENGTH_LONG).show();
+                    return;
+                }
+
+                String message = response.body() != null
+                        ? response.body().getMessage() : getString(R.string.toast_reset_success);
+                Toast.makeText(ForgotPasswordActivity.this, message, Toast.LENGTH_SHORT).show();
+                finish();
+            }
+
+            @Override
+            public void onFailure(Call<MessageResponse> call, Throwable throwable) {
+                if (isFinishing() || isDestroyed() || call.isCanceled()) return;
+                showResetLoading(false);
+                Toast.makeText(ForgotPasswordActivity.this,
+                        R.string.error_server_unreachable, Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    private void requestPasswordReset(String email, boolean resend) {
+        forgotPasswordCall = ApiClient.auth().forgotPassword(new ForgotPasswordRequest(email));
+        forgotPasswordCall.enqueue(new Callback<MessageResponse>() {
+            @Override
+            public void onResponse(Call<MessageResponse> call, Response<MessageResponse> response) {
+                if (isFinishing() || isDestroyed()) return;
+                if (resend) {
+                    binding.tvResendCode.setEnabled(true);
+                } else {
+                    showSendCodeLoading(false);
+                }
+
+                if (!response.isSuccessful()) {
+                    String fallback = getString(R.string.error_forgot_password_failed);
+                    Toast.makeText(ForgotPasswordActivity.this,
+                            ApiErrorParser.getMessage(response, fallback), Toast.LENGTH_LONG).show();
+                    return;
+                }
+
+                String message = response.body() != null
+                        ? response.body().getMessage() : getString(R.string.toast_code_sent);
+                if (resend) {
+                    Toast.makeText(ForgotPasswordActivity.this, message, Toast.LENGTH_SHORT).show();
+                } else {
+                    verifiedEmail = email;
+                    showResetStep();
+                    Toast.makeText(ForgotPasswordActivity.this, message, Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<MessageResponse> call, Throwable throwable) {
+                if (isFinishing() || isDestroyed() || call.isCanceled()) return;
+                if (resend) {
+                    binding.tvResendCode.setEnabled(true);
+                } else {
+                    showSendCodeLoading(false);
+                }
+                Toast.makeText(ForgotPasswordActivity.this,
+                        R.string.error_server_unreachable, Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
     private boolean isValidEmail(String email) {
@@ -193,5 +275,9 @@ public class ForgotPasswordActivity extends AppCompatActivity {
 
     private String getText(EditText editText) {
         return editText.getText() != null ? editText.getText().toString().trim() : "";
+    }
+
+    private String getRawText(EditText editText) {
+        return editText.getText() != null ? editText.getText().toString() : "";
     }
 }

@@ -10,6 +10,14 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.android_app.databinding.ActivityRegisterBinding;
+import com.example.android_app.model.RegisterRequest;
+import com.example.android_app.model.RegisterResponse;
+import com.example.android_app.network.ApiClient;
+import com.example.android_app.util.ApiErrorParser;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class RegisterActivity extends AppCompatActivity {
 
@@ -18,6 +26,7 @@ public class RegisterActivity extends AppCompatActivity {
     private static final int MAX_DISPLAY_NAME_LENGTH = 100;
 
     private ActivityRegisterBinding binding;
+    private Call<RegisterResponse> registerCall;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -26,6 +35,14 @@ public class RegisterActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
 
         setupListeners();
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (registerCall != null) {
+            registerCall.cancel();
+        }
+        super.onDestroy();
     }
 
     private void setupListeners() {
@@ -37,8 +54,8 @@ public class RegisterActivity extends AppCompatActivity {
     private void handleRegister() {
         String displayName = getText(binding.etDisplayName);
         String email = getText(binding.etEmail);
-        String password = getText(binding.etPassword);
-        String confirmPassword = getText(binding.etConfirmPassword);
+        String password = getRawText(binding.etPassword);
+        String confirmPassword = getRawText(binding.etConfirmPassword);
 
         binding.tilDisplayName.setError(null);
         binding.tilEmail.setError(null);
@@ -63,7 +80,7 @@ public class RegisterActivity extends AppCompatActivity {
             isValid = false;
         }
 
-        if (TextUtils.isEmpty(password)) {
+        if (TextUtils.isEmpty(password.trim())) {
             binding.tilPassword.setError(getString(R.string.error_empty_password));
             isValid = false;
         } else if (password.length() < MIN_PASSWORD_LENGTH) {
@@ -74,7 +91,7 @@ public class RegisterActivity extends AppCompatActivity {
             isValid = false;
         }
 
-        if (TextUtils.isEmpty(confirmPassword)) {
+        if (TextUtils.isEmpty(confirmPassword.trim())) {
             binding.tilConfirmPassword.setError(getString(R.string.error_empty_confirm_register_password));
             isValid = false;
         } else if (!TextUtils.isEmpty(password) && !password.equals(confirmPassword)) {
@@ -87,11 +104,34 @@ public class RegisterActivity extends AppCompatActivity {
         }
 
         showLoading(true);
-        binding.getRoot().postDelayed(() -> {
-            showLoading(false);
-            Toast.makeText(this, getString(R.string.toast_register_success), Toast.LENGTH_SHORT).show();
-            finish();
-        }, 1500);
+        registerCall = ApiClient.auth().register(
+                new RegisterRequest(email, password, displayName));
+        registerCall.enqueue(new Callback<RegisterResponse>() {
+            @Override
+            public void onResponse(Call<RegisterResponse> call, Response<RegisterResponse> response) {
+                if (isFinishing() || isDestroyed()) return;
+                showLoading(false);
+
+                if (!response.isSuccessful()) {
+                    Toast.makeText(RegisterActivity.this,
+                            ApiErrorParser.getMessage(response, getString(R.string.error_register_failed)),
+                            Toast.LENGTH_LONG).show();
+                    return;
+                }
+
+                Toast.makeText(RegisterActivity.this,
+                        R.string.toast_register_success, Toast.LENGTH_SHORT).show();
+                finish();
+            }
+
+            @Override
+            public void onFailure(Call<RegisterResponse> call, Throwable throwable) {
+                if (isFinishing() || isDestroyed() || call.isCanceled()) return;
+                showLoading(false);
+                Toast.makeText(RegisterActivity.this,
+                        R.string.error_server_unreachable, Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
     private void showLoading(boolean isLoading) {
@@ -108,5 +148,9 @@ public class RegisterActivity extends AppCompatActivity {
 
     private String getText(EditText editText) {
         return editText.getText() != null ? editText.getText().toString().trim() : "";
+    }
+
+    private String getRawText(EditText editText) {
+        return editText.getText() != null ? editText.getText().toString() : "";
     }
 }

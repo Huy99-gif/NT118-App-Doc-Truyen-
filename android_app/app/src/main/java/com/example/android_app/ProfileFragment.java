@@ -12,10 +12,18 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.example.android_app.databinding.FragmentProfileBinding;
+import com.example.android_app.model.UserResponse;
+import com.example.android_app.network.ApiClient;
+import com.example.android_app.util.ApiErrorParser;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class ProfileFragment extends Fragment {
 
     private FragmentProfileBinding binding;
+    private Call<UserResponse> currentUserCall;
 
     @Nullable
     @Override
@@ -33,16 +41,53 @@ public class ProfileFragment extends Fragment {
     }
 
     private void loadUserData() {
-        // [GIẢ LẬP API] Sau này nối Retrofit endpoint GET /auth/me
-        // ApiService.getCurrentUser().enqueue(...)
+        String token = AuthPreferences.getToken(requireContext());
+        if (token == null || token.trim().isEmpty()) {
+            binding.tvDisplayName.setText(R.string.profile_guest_name);
+            binding.tvEmail.setText("");
+            binding.tvRole.setText("");
+            clearProfileStats();
+            return;
+        }
 
-        binding.tvDisplayName.setText("Nguyễn Văn A");
-        binding.tvEmail.setText("nguyenvana@gmail.com");
-        binding.tvRole.setText("Độc giả VIP");
+        currentUserCall = ApiClient.auth().getCurrentUser("Bearer " + token);
+        currentUserCall.enqueue(new Callback<UserResponse>() {
+            @Override
+            public void onResponse(Call<UserResponse> call, Response<UserResponse> response) {
+                if (binding == null) return;
+                if (!response.isSuccessful()) {
+                    Toast.makeText(requireContext(),
+                            ApiErrorParser.getMessage(response, getString(R.string.error_profile_load_failed)),
+                            Toast.LENGTH_LONG).show();
+                    return;
+                }
 
-        binding.tvStatSaved.setText("12");
-        binding.tvStatHistory.setText("45");
-        binding.tvStatLiked.setText("8");
+                UserResponse user = response.body();
+                if (user == null) {
+                    Toast.makeText(requireContext(),
+                            R.string.error_profile_load_failed, Toast.LENGTH_LONG).show();
+                    return;
+                }
+
+                binding.tvDisplayName.setText(user.getDisplayName());
+                binding.tvEmail.setText(user.getEmail());
+                binding.tvRole.setText(R.string.profile_reader_role);
+                clearProfileStats();
+            }
+
+            @Override
+            public void onFailure(Call<UserResponse> call, Throwable throwable) {
+                if (binding == null || call.isCanceled()) return;
+                Toast.makeText(requireContext(),
+                        R.string.error_server_unreachable, Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    private void clearProfileStats() {
+        binding.tvStatSaved.setText("—");
+        binding.tvStatHistory.setText("—");
+        binding.tvStatLiked.setText("—");
     }
 
     private void setupListeners() {
@@ -75,9 +120,7 @@ public class ProfileFragment extends Fragment {
     }
 
     private void handleLogout() {
-        // [GIẢ LẬP API / LOGIC] Xóa token khỏi TokenManager/SharedPreferences
-        // TokenManager.getInstance(requireContext()).clearToken();
-
+        AuthPreferences.clear(requireContext());
         Toast.makeText(requireContext(), "Đã đăng xuất tài khoản", Toast.LENGTH_SHORT).show();
 
         Intent intent = new Intent(requireActivity(), LoginActivity.class);
@@ -87,6 +130,9 @@ public class ProfileFragment extends Fragment {
 
     @Override
     public void onDestroyView() {
+        if (currentUserCall != null) {
+            currentUserCall.cancel();
+        }
         super.onDestroyView();
         binding = null;
     }
