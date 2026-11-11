@@ -16,6 +16,7 @@ secrets.properties
 **/target/
 
 # Local and internal working documents
+/docs/
 /report/
 /task/
 /ThongTin/
