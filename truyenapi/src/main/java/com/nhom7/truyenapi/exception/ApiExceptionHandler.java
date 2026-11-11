@@ -9,6 +9,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -58,6 +59,13 @@ public class ApiExceptionHandler {
             HttpMessageNotReadableException exception) {
         return ResponseEntity.badRequest()
                 .body(Map.of("error", "Dữ liệu yêu cầu không hợp lệ"));
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<Map<String, String>> handleArgumentTypeMismatch(
+            MethodArgumentTypeMismatchException exception) {
+        return ResponseEntity.badRequest()
+                .body(Map.of("error", "Tham số yêu cầu không hợp lệ"));
     }
 
     @ExceptionHandler(Exception.class)
