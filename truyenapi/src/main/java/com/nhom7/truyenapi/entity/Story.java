@@ -30,6 +30,9 @@ public class Story {
     @Column(name = "status", length = 20, nullable = false)
     private String status;
 
+    @Column(name = "featured", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE NOT NULL")
+    private boolean featured;
+
     @Column(name = "updated_at")
     private Instant updatedAt;
 
@@ -66,6 +69,8 @@ public class Story {
     public void setSummary(String summary) { this.summary = summary; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+    public boolean isFeatured() { return featured; }
+    public void setFeatured(boolean featured) { this.featured = featured; }
     public Instant getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
     public Set<Category> getCategories() { return categories; }
