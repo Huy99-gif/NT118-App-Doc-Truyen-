@@ -94,8 +94,17 @@ public class StoryAdapter extends RecyclerView.Adapter<StoryAdapter.StoryViewHol
         void bind(Story story) {
             tvName.setText(story.getName());
             tvAuthor.setText(story.getAuthor());
-            tvLatest.setText(story.getLatestChapter());
-            tvChapterCount.setText("Chương " + story.getChapterCount());
+            String subtitle = story.getLatestChapter();
+            if (subtitle == null || subtitle.trim().isEmpty()) {
+                subtitle = statusLabel(story.getStatus());
+            }
+            tvLatest.setText(subtitle);
+            if (story.getChapterCount() > 0) {
+                tvChapterCount.setText("Chương " + story.getChapterCount());
+                tvChapterCount.setVisibility(View.VISIBLE);
+            } else {
+                tvChapterCount.setVisibility(View.GONE);
+            }
             if (story.isReading()) {
                 tvProgress.setText(R.string.recently_reading);
                 tvProgress.setVisibility(View.VISIBLE);
@@ -107,6 +116,12 @@ public class StoryAdapter extends RecyclerView.Adapter<StoryAdapter.StoryViewHol
                     .apply(new RequestOptions().placeholder(R.drawable.ic_launcher_foreground).error(R.drawable.ic_launcher_foreground))
                     .transition(DrawableTransitionOptions.withCrossFade())
                     .into(ivCover);
+        }
+
+        private String statusLabel(String status) {
+            if ("ONGOING".equals(status)) return "Đang ra";
+            if ("COMPLETED".equals(status)) return "Hoàn thành";
+            return status == null ? "" : status;
         }
     }
 }

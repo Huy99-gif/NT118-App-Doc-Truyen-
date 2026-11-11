@@ -2,7 +2,10 @@ package com.example.android_app;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.InputType;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -11,15 +14,27 @@ import androidx.recyclerview.widget.GridLayoutManager;
 
 import com.example.android_app.adapter.StoryAdapter;
 import com.example.android_app.databinding.ActivityMainBinding;
+import com.example.android_app.model.PageResponse;
 import com.example.android_app.model.Story;
+import com.example.android_app.model.StorySummaryResponse;
+import com.example.android_app.network.ApiClient;
+import com.example.android_app.util.ApiErrorParser;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.tabs.TabLayout;
 
-import java.util.ArrayList;
 import java.util.List;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class MainActivity extends AppCompatActivity {
 
     private ActivityMainBinding binding;
     private StoryAdapter adapter;
+    private Call<PageResponse<StorySummaryResponse>> storiesCall;
+    private String selectedType = "latest";
+    private String selectedCategoryId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,8 +44,18 @@ public class MainActivity extends AppCompatActivity {
 
         setupToolbar();
         setupRecyclerView();
+        setupSearch();
+        setupStoryTabs();
         setupBottomNavigation();
-        loadDemoData();
+        loadStories(null);
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (storiesCall != null) {
+            storiesCall.cancel();
+        }
+        super.onDestroy();
     }
 
     private void setupToolbar() {
@@ -53,6 +78,40 @@ public class MainActivity extends AppCompatActivity {
         binding.recyclerView.setAdapter(adapter);
     }
 
+    private void setupSearch() {
+        binding.etSearch.setImeOptions(EditorInfo.IME_ACTION_SEARCH);
+        binding.etSearch.setOnEditorActionListener((view, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                String query = binding.etSearch.getText() == null
+                        ? "" : binding.etSearch.getText().toString().trim();
+                loadStories(query.isEmpty() ? null : query);
+                return true;
+            }
+            return false;
+        });
+        binding.btnFilter.setOnClickListener(v -> showCategoryFilter());
+    }
+
+    private void setupStoryTabs() {
+        binding.tabLayout.addTab(binding.tabLayout.newTab().setText(R.string.hot));
+        binding.tabLayout.addTab(binding.tabLayout.newTab().setText(R.string.recent));
+        binding.tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+            @Override
+            public void onTabSelected(TabLayout.Tab tab) {
+                selectedType = tab.getPosition() == 0 ? "featured" : "latest";
+                String query = binding.etSearch.getText() == null
+                        ? "" : binding.etSearch.getText().toString().trim();
+                loadStories(query.isEmpty() ? null : query);
+            }
+
+            @Override
+            public void onTabUnselected(TabLayout.Tab tab) {}
+
+            @Override
+            public void onTabReselected(TabLayout.Tab tab) {}
+        });
+    }
+
     private void setupBottomNavigation() {
         binding.bottomNavigation.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
@@ -66,8 +125,8 @@ public class MainActivity extends AppCompatActivity {
                 showFragment(new ProfileFragment());
                 return true;
             } else if (id == R.id.nav_categories) {
-                // [GIẢ LẬP] Màn hình Thể loại
-                Toast.makeText(this, "Màn hình Thể loại (Đang phát triển)", Toast.LENGTH_SHORT).show();
+                showCategoryFilter();
+                return true;
             }
             return true;
         });
@@ -88,29 +147,103 @@ public class MainActivity extends AppCompatActivity {
                 .commit();
     }
 
-    private void loadDemoData() {
-        // [GIẢ LẬP API] Sau này nối GET /stories từ Backend
-        List<Story> stories = new ArrayList<>();
-        stories.add(new Story("1", "Cố Ấy Tên Ai", "Nhã Ngà",
-                "https://i.pinimg.com/564x19/7b/19/95/19799591b014a7e0e677579f5653f82a.jpg",
-                "Chương 102: Sau tất cả", 102));
-        stories.add(new Story("2", "Thám Tử Lừng Danh Conan", "Aoyama Gosho",
-                "https://i.pinimg.com/564x432/4b/e3/cf/4be3cf5e5a6b69a40b57a9a6d5f5d0f8.jpg",
-                "Chương 1105: Dấu vết kỳ lạ", 1105));
-        stories.add(new Story("3", "Đấu Phá Thương Khung", "Đường Tam",
-                "https://i.pinimg.com/564x8ad/3e/3e/3e/3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e.jpg",
-                "Chương 432: Thăng cấp", 1020));
-        stories.add(new Story("4", "Một Mình Đua Xe", "Nhã Ngà",
-                "https://i.pinimg.com/564x19/7b/19/95/19799591b014a7e0e677579f5653f82a.jpg",
-                "Chương 88: Kết thúc", 88));
-        stories.add(new Story("5", "Bức Tường Màu Hồng", "Đặng Hải Nam",
-                "https://i.pinimg.com/564x19/7b/19/95/19799591b014a7e0e677579f5653f82a.jpg",
-                "Chương 12: Nắng chiều", 12));
-        adapter.setStories(stories);
-
-        binding.progressBar.setVisibility(View.GONE);
-        if (stories.isEmpty()) {
-            binding.tvEmpty.setVisibility(View.VISIBLE);
+    public void openLibraryTab(int tabPosition) {
+        if (binding.bottomNavigation.getSelectedItemId() == R.id.nav_library) {
+            showFragment(new LibraryFragment());
+        } else {
+            binding.bottomNavigation.setSelectedItemId(R.id.nav_library);
         }
+        binding.fragmentContainer.post(() -> {
+            Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.fragmentContainer);
+            if (fragment instanceof LibraryFragment) {
+                ((LibraryFragment) fragment).selectTab(tabPosition);
+            }
+        });
+    }
+
+    private void showCategoryFilter() {
+        EditText categoryInput = new EditText(this);
+        categoryInput.setInputType(InputType.TYPE_CLASS_NUMBER);
+        categoryInput.setSingleLine(true);
+        categoryInput.setHint("ID thể loại");
+        if (selectedCategoryId != null) categoryInput.setText(selectedCategoryId);
+        new MaterialAlertDialogBuilder(this)
+                .setTitle("Lọc theo thể loại")
+                .setMessage("Nhập ID thể loại từ dữ liệu backend.")
+                .setView(categoryInput)
+                .setNegativeButton("Hủy", null)
+                .setNeutralButton("Xóa lọc", (dialog, which) -> {
+                    selectedCategoryId = null;
+                    reloadCurrentStories();
+                })
+                .setPositiveButton("Áp dụng", (dialog, which) -> {
+                    String category = categoryInput.getText().toString().trim();
+                    selectedCategoryId = category.isEmpty() ? null : category;
+                    reloadCurrentStories();
+                })
+                .show();
+    }
+
+    private void reloadCurrentStories() {
+        String query = binding.etSearch.getText() == null
+                ? "" : binding.etSearch.getText().toString().trim();
+        loadStories(query.isEmpty() ? null : query);
+    }
+
+    private void loadStories(String query) {
+        String authorization = ApiClient.authorization(this);
+        if (authorization == null) {
+            adapter.setStories(null);
+            binding.progressBar.setVisibility(View.GONE);
+            binding.tvEmpty.setText("Đăng nhập để xem danh sách truyện.");
+            binding.tvEmpty.setVisibility(View.VISIBLE);
+            return;
+        }
+
+        if (storiesCall != null) {
+            storiesCall.cancel();
+        }
+        if (query != null && selectedCategoryId != null) {
+            Toast.makeText(this, "Bộ lọc thể loại áp dụng cho danh sách, không áp dụng khi tìm kiếm.",
+                    Toast.LENGTH_SHORT).show();
+        }
+        binding.progressBar.setVisibility(View.VISIBLE);
+        binding.tvEmpty.setVisibility(View.GONE);
+        storiesCall = query == null
+                ? ApiClient.api().getStories(authorization, selectedType, selectedCategoryId, 0, 50)
+                : ApiClient.api().searchStories(authorization, query, null, null, 0, 50);
+        storiesCall.enqueue(new Callback<PageResponse<StorySummaryResponse>>() {
+            @Override
+            public void onResponse(Call<PageResponse<StorySummaryResponse>> call,
+                                   Response<PageResponse<StorySummaryResponse>> response) {
+                if (isFinishing() || isDestroyed() || call.isCanceled()) return;
+                binding.progressBar.setVisibility(View.GONE);
+                if (!response.isSuccessful() || response.body() == null) {
+                    binding.tvEmpty.setText(ApiErrorParser.getMessage(
+                            response, getString(R.string.error_server_unreachable)));
+                    binding.tvEmpty.setVisibility(View.VISIBLE);
+                    return;
+                }
+
+                List<Story> stories = new java.util.ArrayList<>();
+                for (StorySummaryResponse item : response.body().items) {
+                    Story story = new Story(String.valueOf(item.id), item.title, item.authorName,
+                            item.coverUrl, null, 0);
+                    story.setStatus(item.status);
+                    stories.add(story);
+                }
+                adapter.setStories(stories);
+                binding.tvEmpty.setText(R.string.empty_truyen);
+                binding.tvEmpty.setVisibility(stories.isEmpty() ? View.VISIBLE : View.GONE);
+            }
+
+            @Override
+            public void onFailure(Call<PageResponse<StorySummaryResponse>> call, Throwable throwable) {
+                if (isFinishing() || isDestroyed() || call.isCanceled()) return;
+                binding.progressBar.setVisibility(View.GONE);
+                binding.tvEmpty.setText(R.string.error_server_unreachable);
+                binding.tvEmpty.setVisibility(View.VISIBLE);
+            }
+        });
     }
 }

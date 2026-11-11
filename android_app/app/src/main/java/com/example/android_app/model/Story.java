@@ -8,6 +8,9 @@ public class Story {
     private String latestChapter;
     private int chapterCount;
     private boolean isReading;
+    private String status;
+    private long initialChapterId;
+    private int charOffset;
 
     public Story(String id, String name, String author, String coverUrl, String latestChapter, int chapterCount) {
         this.id = id;
@@ -26,4 +29,10 @@ public class Story {
     public int getChapterCount() { return chapterCount; }
     public boolean isReading() { return isReading; }
     public void setReading(boolean reading) { isReading = reading; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+    public long getInitialChapterId() { return initialChapterId; }
+    public void setInitialChapterId(long initialChapterId) { this.initialChapterId = initialChapterId; }
+    public int getCharOffset() { return charOffset; }
+    public void setCharOffset(int charOffset) { this.charOffset = charOffset; }
 }

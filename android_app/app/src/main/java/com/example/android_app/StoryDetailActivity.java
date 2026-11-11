@@ -14,53 +14,80 @@ import com.bumptech.glide.request.RequestOptions;
 import com.example.android_app.adapter.ChapterAdapter;
 import com.example.android_app.databinding.ActivityStoryDetailBinding;
 import com.example.android_app.model.Chapter;
+import com.example.android_app.model.ChapterSummaryResponse;
+import com.example.android_app.model.LibraryItemResponse;
+import com.example.android_app.model.PageResponse;
+import com.example.android_app.model.StoryDetailResponse;
+import com.example.android_app.network.ApiClient;
+import com.example.android_app.util.ApiErrorParser;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class StoryDetailActivity extends AppCompatActivity {
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
+public class StoryDetailActivity extends AppCompatActivity {
     private ActivityStoryDetailBinding binding;
     private ChapterAdapter chapterAdapter;
-    private boolean isBookmarked = false;
-
-    // Các biến nhận từ Intent
-    private String storyId;
+    private final List<ChapterSummaryResponse> chapters = new ArrayList<>();
+    private long storyId;
     private String storyName;
     private String storyAuthor;
     private String storyCover;
     private int chapterCount;
+    private boolean isSaved;
+    private Call<StoryDetailResponse> detailCall;
+    private Call<PageResponse<ChapterSummaryResponse>> chaptersCall;
+    private Call<PageResponse<LibraryItemResponse>> libraryCall;
+    private Call<Void> libraryMutationCall;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         binding = ActivityStoryDetailBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
-
         getIntentData();
         setupUI();
         setupListeners();
         loadStoryDetail();
+        loadChapters();
+        loadLibraryStatus();
+    }
+
+    @Override
+    protected void onDestroy() {
+        cancel(detailCall);
+        cancel(chaptersCall);
+        cancel(libraryCall);
+        cancel(libraryMutationCall);
+        super.onDestroy();
     }
 
     private void getIntentData() {
-        if (getIntent() != null) {
-            storyId = getIntent().getStringExtra("story_id");
-            storyName = getIntent().getStringExtra("story_name");
-            storyAuthor = getIntent().getStringExtra("story_author");
-            storyCover = getIntent().getStringExtra("story_cover");
-            chapterCount = getIntent().getIntExtra("story_chapter_count", 0);
+        Object rawStoryId = getIntent().getExtras() == null
+                ? null : getIntent().getExtras().get("story_id");
+        if (rawStoryId instanceof Number) {
+            storyId = ((Number) rawStoryId).longValue();
+        } else if (rawStoryId instanceof String) {
+            try {
+                storyId = Long.parseLong((String) rawStoryId);
+            } catch (NumberFormatException ignored) {
+                storyId = 0L;
+            }
         }
+        storyName = getIntent().getStringExtra("story_name");
+        storyAuthor = getIntent().getStringExtra("story_author");
+        storyCover = getIntent().getStringExtra("story_cover");
     }
 
     private void setupUI() {
-        binding.tvStoryName.setText(storyName != null ? storyName : "Tên truyện chưa cập nhật");
-        binding.tvAuthor.setText("Tác giả: " + (storyAuthor != null ? storyAuthor : "Đang cập nhật"));
-        binding.tvStatus.setText("Trạng thái: Đang cập nhật");
-        binding.tvCategory.setText("Thể loại: Ngôn Tình, Đô Thị, Huyền Huyễn");
-        binding.tvChapterHeader.setText("Danh sách chương (" + chapterCount + " chương)");
-
-        // Render ảnh bìa
+        binding.tvStoryName.setText(storyName == null ? "Đang tải truyện..." : storyName);
+        binding.tvAuthor.setText("Tác giả: " + (storyAuthor == null ? "Đang cập nhật" : storyAuthor));
+        binding.tvStatus.setText("Trạng thái: Đang tải");
+        binding.tvCategory.setText("Thể loại: Đang tải");
+        binding.tvDescription.setText("Đang tải nội dung giới thiệu...");
         Glide.with(this)
                 .load(storyCover)
                 .apply(new RequestOptions()
@@ -69,79 +96,239 @@ public class StoryDetailActivity extends AppCompatActivity {
                 .transition(DrawableTransitionOptions.withCrossFade())
                 .into(binding.ivCover);
 
-        // Giới thiệu nội dung giả lập
-        binding.tvDescription.setText(
-                "Đây là câu chuyện tình cảm đầy trắc trở nhưng cũng không kém phần ngọt ngào. " +
-                "Nội dung xoay quanh những thăng trầm trong cuộc sống, tình yêu và lý tưởng của các nhân vật chính. " +
-                "Mời các bạn đón đọc các chương mới nhất được cập nhật liên tục!"
-        );
-
-        // RecyclerView chương truyện
-        chapterAdapter = new ChapterAdapter(chapter -> {
-            Intent intent = new Intent(this, ReaderActivity.class);
-            intent.putExtra("story_id", storyId);
-            intent.putExtra("story_name", storyName);
-            intent.putExtra("chapter_id", chapter.getId());
-            intent.putExtra("chapter_number", chapter.getChapterNumber());
-            intent.putExtra("chapter_title", chapter.getTitle());
-            intent.putExtra("total_chapters", chapterCount > 0 ? chapterCount : 102);
-            startActivity(intent);
-        });
+        chapterAdapter = new ChapterAdapter(chapter -> openReader(Long.parseLong(chapter.getId())));
         binding.rvChapters.setLayoutManager(new LinearLayoutManager(this));
         binding.rvChapters.setAdapter(chapterAdapter);
+        binding.btnReadFirst.setEnabled(false);
     }
 
     private void setupListeners() {
         binding.btnBack.setOnClickListener(v -> finish());
-
-        // Nút đọc từ đầu
         binding.btnReadFirst.setOnClickListener(v -> {
-            Intent intent = new Intent(this, ReaderActivity.class);
-            intent.putExtra("story_id", storyId);
-            intent.putExtra("story_name", storyName);
-            intent.putExtra("chapter_id", "chap_1");
-            intent.putExtra("chapter_number", 1);
-            intent.putExtra("chapter_title", "Hành trình bắt đầu (Phần 1)");
-            intent.putExtra("total_chapters", chapterCount > 0 ? chapterCount : 102);
-            startActivity(intent);
+            if (!chapters.isEmpty()) {
+                openReader(chapters.get(0).id);
+            }
         });
+        binding.btnBookmark.setOnClickListener(v -> changeLibraryMembership());
+    }
 
-        // Nút lưu tủ sách
-        binding.btnBookmark.setOnClickListener(v -> {
-            isBookmarked = !isBookmarked;
-            // [GIẢ LẬP API] Sau này sẽ gọi POST /api/v1/libraries hoặc DELETE /api/v1/libraries/{id}
-            if (isBookmarked) {
-                binding.btnBookmark.setText("Đã lưu tủ sách");
-                Toast.makeText(this, "Đã thêm vào tủ sách cá nhân", Toast.LENGTH_SHORT).show();
-            } else {
-                binding.btnBookmark.setText("Lưu tủ sách");
-                Toast.makeText(this, "Đã bỏ khỏi tủ sách", Toast.LENGTH_SHORT).show();
+    private void loadStoryDetail() {
+        String authorization = requireAuthorization();
+        if (authorization == null || storyId <= 0) return;
+
+        detailCall = ApiClient.api().getStory(authorization, storyId);
+        detailCall.enqueue(new Callback<StoryDetailResponse>() {
+            @Override
+            public void onResponse(Call<StoryDetailResponse> call,
+                                   Response<StoryDetailResponse> response) {
+                if (isFinishing() || call.isCanceled()) return;
+                if (!response.isSuccessful() || response.body() == null) {
+                    showError(response, "Không tải được thông tin truyện.");
+                    return;
+                }
+                StoryDetailResponse story = response.body();
+                storyName = story.title;
+                storyAuthor = story.authorName;
+                storyCover = story.coverUrl;
+                binding.tvStoryName.setText(story.title);
+                binding.tvAuthor.setText("Tác giả: " + valueOrDefault(story.authorName, "Đang cập nhật"));
+                binding.tvStatus.setText("Trạng thái: " + statusLabel(story.status));
+                binding.tvCategory.setText("Thể loại: "
+                        + (story.categories == null || story.categories.isEmpty()
+                        ? "Chưa phân loại" : android.text.TextUtils.join(", ", story.categories)));
+                binding.tvDescription.setText(valueOrDefault(story.summary, "Chưa có giới thiệu."));
+                Glide.with(StoryDetailActivity.this)
+                        .load(story.coverUrl)
+                        .apply(new RequestOptions()
+                                .placeholder(R.drawable.ic_launcher_foreground)
+                                .error(R.drawable.ic_launcher_foreground))
+                        .transition(DrawableTransitionOptions.withCrossFade())
+                        .into(binding.ivCover);
+            }
+
+            @Override
+            public void onFailure(Call<StoryDetailResponse> call, Throwable throwable) {
+                if (!isFinishing() && !call.isCanceled()) {
+                    Toast.makeText(StoryDetailActivity.this,
+                            R.string.error_server_unreachable, Toast.LENGTH_LONG).show();
+                }
             }
         });
     }
 
-    private void loadStoryDetail() {
-        // [GIẢ LẬP API] Sau này nối Retrofit:
-        // ApiService.getStoryDetail(storyId).enqueue(...)
-        // ApiService.getStoryChapters(storyId).enqueue(...)
+    private void loadChapters() {
+        String authorization = requireAuthorization();
+        if (authorization == null || storyId <= 0) return;
 
         binding.progressBarChapters.setVisibility(View.VISIBLE);
-
-        // Giả lập delay mạng 800ms để tải danh sách chương
-        binding.getRoot().postDelayed(() -> {
-            binding.progressBarChapters.setVisibility(View.GONE);
-            List<Chapter> mockChapters = new ArrayList<>();
-            int count = chapterCount > 0 ? Math.min(chapterCount, 15) : 10;
-            for (int i = 1; i <= count; i++) {
-                mockChapters.add(new Chapter(
-                        "chap_" + i,
-                        i,
-                        "Hành trình bắt đầu (Phần " + i + ")",
-                        "1" + (i % 9) + "/10/2024",
-                        1200 + (i * 35)
-                ));
+        chaptersCall = ApiClient.api().getStoryChapters(authorization, storyId, 0, 50);
+        chaptersCall.enqueue(new Callback<PageResponse<ChapterSummaryResponse>>() {
+            @Override
+            public void onResponse(Call<PageResponse<ChapterSummaryResponse>> call,
+                                   Response<PageResponse<ChapterSummaryResponse>> response) {
+                if (isFinishing() || call.isCanceled()) return;
+                binding.progressBarChapters.setVisibility(View.GONE);
+                if (!response.isSuccessful() || response.body() == null) {
+                    showError(response, "Không tải được danh sách chương.");
+                    return;
+                }
+                chapters.clear();
+                chapters.addAll(response.body().items);
+                chapterCount = (int) Math.min(Integer.MAX_VALUE, response.body().totalElements);
+                List<Chapter> adapterItems = new ArrayList<>();
+                for (ChapterSummaryResponse item : chapters) {
+                    adapterItems.add(new Chapter(String.valueOf(item.id),
+                            item.chapterNo == null ? 0 : item.chapterNo,
+                            item.title, item.updatedAt, 0));
+                }
+                chapterAdapter.setChapters(adapterItems);
+                binding.tvChapterHeader.setText("Danh sách chương (" + chapterCount + " chương)");
+                binding.btnReadFirst.setEnabled(!chapters.isEmpty());
+                if (chapters.isEmpty()) {
+                    Toast.makeText(StoryDetailActivity.this,
+                            "Truyện chưa có chương.", Toast.LENGTH_SHORT).show();
+                }
             }
-            chapterAdapter.setChapters(mockChapters);
-        }, 800);
+
+            @Override
+            public void onFailure(Call<PageResponse<ChapterSummaryResponse>> call, Throwable throwable) {
+                if (isFinishing() || call.isCanceled()) return;
+                binding.progressBarChapters.setVisibility(View.GONE);
+                Toast.makeText(StoryDetailActivity.this,
+                        R.string.error_server_unreachable, Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    private void loadLibraryStatus() {
+        String authorization = requireAuthorization();
+        if (authorization == null) return;
+        libraryCall = ApiClient.api().getLibrary(authorization, 0, 50);
+        libraryCall.enqueue(new Callback<PageResponse<LibraryItemResponse>>() {
+            @Override
+            public void onResponse(Call<PageResponse<LibraryItemResponse>> call,
+                                   Response<PageResponse<LibraryItemResponse>> response) {
+                if (isFinishing() || call.isCanceled()) return;
+                if (!response.isSuccessful() || response.body() == null) {
+                    showError(response, "Không kiểm tra được tủ sách.");
+                    return;
+                }
+                isSaved = false;
+                for (LibraryItemResponse item : response.body().items) {
+                    if (item.storyId != null && item.storyId == storyId) {
+                        isSaved = true;
+                        break;
+                    }
+                }
+                updateLibraryButton();
+            }
+
+            @Override
+            public void onFailure(Call<PageResponse<LibraryItemResponse>> call, Throwable throwable) {
+                if (!isFinishing() && !call.isCanceled()) {
+                    Toast.makeText(StoryDetailActivity.this,
+                            "Không kiểm tra được trạng thái tủ sách.",
+                            Toast.LENGTH_LONG).show();
+                }
+            }
+        });
+    }
+
+    private void changeLibraryMembership() {
+        String authorization = requireAuthorization();
+        if (authorization == null || storyId <= 0) return;
+        binding.btnBookmark.setEnabled(false);
+        libraryMutationCall = isSaved
+                ? ApiClient.api().removeFromLibrary(authorization, storyId)
+                : ApiClient.api().addToLibrary(authorization,
+                        new com.example.android_app.model.AddLibraryRequest(storyId));
+        libraryMutationCall.enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(Call<Void> call, Response<Void> response) {
+                if (isFinishing() || call.isCanceled()) return;
+                binding.btnBookmark.setEnabled(true);
+                if (!response.isSuccessful()) {
+                    Toast.makeText(StoryDetailActivity.this,
+                            ApiErrorParser.getMessage(response, "Không cập nhật được tủ sách."),
+                            Toast.LENGTH_LONG).show();
+                    return;
+                }
+                isSaved = !isSaved;
+                updateLibraryButton();
+                Toast.makeText(StoryDetailActivity.this,
+                        isSaved ? "Đã thêm vào tủ sách." : "Đã bỏ khỏi tủ sách.",
+                        Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onFailure(Call<Void> call, Throwable throwable) {
+                if (isFinishing() || call.isCanceled()) return;
+                binding.btnBookmark.setEnabled(true);
+                Toast.makeText(StoryDetailActivity.this,
+                        R.string.error_server_unreachable, Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    private void updateLibraryButton() {
+        binding.btnBookmark.setText(isSaved ? "Đã lưu tủ sách" : "Lưu tủ sách");
+    }
+
+    private void openReader(long chapterId) {
+        Intent intent = new Intent(this, ReaderActivity.class);
+        intent.putExtra("story_id", storyId);
+        intent.putExtra("story_name", storyName);
+        intent.putExtra("chapter_id", chapterId);
+        intent.putExtra("chapter_number", chapterNumber(chapterId));
+        intent.putExtra("total_chapters", chapterCount);
+        long[] chapterIds = new long[chapters.size()];
+        int[] chapterNumbers = new int[chapters.size()];
+        String[] chapterTitles = new String[chapters.size()];
+        for (int i = 0; i < chapters.size(); i++) {
+            ChapterSummaryResponse chapter = chapters.get(i);
+            chapterIds[i] = chapter.id;
+            chapterNumbers[i] = chapter.chapterNo == null ? i + 1 : chapter.chapterNo;
+            chapterTitles[i] = chapter.title;
+        }
+        intent.putExtra("chapter_ids", chapterIds);
+        intent.putExtra("chapter_numbers", chapterNumbers);
+        intent.putExtra("chapter_titles", chapterTitles);
+        startActivity(intent);
+    }
+
+    private int chapterNumber(long chapterId) {
+        for (int i = 0; i < chapters.size(); i++) {
+            if (chapters.get(i).id != null && chapters.get(i).id == chapterId) {
+                return chapters.get(i).chapterNo == null ? i + 1 : chapters.get(i).chapterNo;
+            }
+        }
+        return 1;
+    }
+
+    private String requireAuthorization() {
+        String authorization = ApiClient.authorization(this);
+        if (authorization == null) {
+            Toast.makeText(this, "Vui lòng đăng nhập để sử dụng chức năng này.",
+                    Toast.LENGTH_LONG).show();
+        }
+        return authorization;
+    }
+
+    private void showError(Response<?> response, String fallback) {
+        Toast.makeText(this, ApiErrorParser.getMessage(response, fallback), Toast.LENGTH_LONG).show();
+    }
+
+    private String statusLabel(String status) {
+        if ("ONGOING".equals(status)) return "Đang ra";
+        if ("COMPLETED".equals(status)) return "Hoàn thành";
+        return valueOrDefault(status, "Đang cập nhật");
+    }
+
+    private String valueOrDefault(String value, String fallback) {
+        return value == null || value.trim().isEmpty() ? fallback : value;
+    }
+
+    private void cancel(Call<?> call) {
+        if (call != null) call.cancel();
     }
 }

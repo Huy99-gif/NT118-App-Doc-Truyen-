@@ -105,14 +105,12 @@ public class ProfileFragment extends Fragment {
 
         // Tủ sách cá nhân
         binding.btnMyLibrary.setOnClickListener(v -> {
-            // [GIẢ LẬP] Chuyển tab hoặc mở tủ sách
-            Toast.makeText(requireContext(), "Mở Tủ sách cá nhân", Toast.LENGTH_SHORT).show();
+            ((MainActivity) requireActivity()).openLibraryTab(0);
         });
 
         // Lịch sử đọc
         binding.btnReadingHistory.setOnClickListener(v -> {
-            // [GIẢ LẬP] Mở lịch sử đọc
-            Toast.makeText(requireContext(), "Mở Lịch sử đọc truyện", Toast.LENGTH_SHORT).show();
+            ((MainActivity) requireActivity()).openLibraryTab(1);
         });
 
         // Đăng xuất

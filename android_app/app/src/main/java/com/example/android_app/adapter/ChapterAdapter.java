@@ -74,7 +74,8 @@ public class ChapterAdapter extends RecyclerView.Adapter<ChapterAdapter.ChapterV
         void bind(Chapter chapter) {
             String titleStr = "Chương " + chapter.getChapterNumber() + ": " + chapter.getTitle();
             tvChapterTitle.setText(titleStr);
-            String subStr = "Cập nhật: " + chapter.getUpdatedDate() + "  •  " + chapter.getViewCount() + " lượt đọc";
+            String subStr = chapter.getUpdatedDate() == null
+                    ? "" : "Cập nhật: " + chapter.getUpdatedDate();
             tvChapterSub.setText(subStr);
         }
     }
