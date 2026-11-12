@@ -152,8 +152,7 @@ public class ReaderActivity extends AppCompatActivity {
                 binding.tvToolbarTitle.setText(displayStoryName() + " - Chương " + currentChapterNumber);
                 binding.tvChapterTitle.setText("Chương " + currentChapterNumber + ": "
                         + (chapterTitle == null ? "" : chapterTitle));
-                binding.tvChapterInfo.setText(chapter.updatedAt == null
-                        ? "" : "Cập nhật: " + chapter.updatedAt);
+                binding.tvChapterInfo.setText(formatUpdatedDate(chapter.updatedAt));
                 binding.btnChapterList.setText("Chương " + currentChapterNumber);
                 binding.tvChapterContent.setText(chapter.content == null ? "" : chapter.content);
                 binding.tvChapterContent.setVisibility(View.VISIBLE);
@@ -356,6 +355,20 @@ public class ReaderActivity extends AppCompatActivity {
 
     private String displayStoryName() {
         return storyName == null || storyName.trim().isEmpty() ? "Đọc truyện" : storyName;
+    }
+
+    private String formatUpdatedDate(String rawDate) {
+        if (rawDate == null || rawDate.trim().isEmpty()) return "";
+        try {
+            if (rawDate.contains("T")) {
+                String datePart = rawDate.split("T")[0];
+                String[] parts = datePart.split("-");
+                if (parts.length == 3) {
+                    return "Cập nhật: " + parts[2] + "/" + parts[1] + "/" + parts[0];
+                }
+            }
+        } catch (Exception ignored) {}
+        return "Cập nhật: " + rawDate;
     }
 
     private void cancel(Call<?> call) {
