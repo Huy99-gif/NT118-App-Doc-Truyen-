@@ -81,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
     private void setupSearch() {
         binding.etSearch.setImeOptions(EditorInfo.IME_ACTION_SEARCH);
         binding.etSearch.setOnEditorActionListener((view, actionId, event) -> {
-            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+            if (actionId == EditorInfo.IME_ACTION_SEARCH || actionId == EditorInfo.IME_ACTION_UNSPECIFIED) {
                 String query = binding.etSearch.getText() == null
                         ? "" : binding.etSearch.getText().toString().trim();
                 loadStories(query.isEmpty() ? null : query);
@@ -89,6 +89,30 @@ public class MainActivity extends AppCompatActivity {
             }
             return false;
         });
+
+        // Bấm vào kính lúp để tìm kiếm
+        binding.ivSearchIcon.setOnClickListener(v -> {
+            String query = binding.etSearch.getText() == null
+                    ? "" : binding.etSearch.getText().toString().trim();
+            loadStories(query.isEmpty() ? null : query);
+        });
+
+        // Tự động nạp lại danh sách mặc định khi ô tìm kiếm bị xóa rỗng
+        binding.etSearch.addTextChangedListener(new android.text.TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+            @Override
+            public void afterTextChanged(android.text.Editable s) {
+                if (s == null || s.toString().trim().isEmpty()) {
+                    loadStories(null);
+                }
+            }
+        });
+
         binding.btnFilter.setOnClickListener(v -> showCategoryFilter());
     }
 
