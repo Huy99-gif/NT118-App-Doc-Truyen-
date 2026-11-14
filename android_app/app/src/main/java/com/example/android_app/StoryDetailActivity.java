@@ -17,6 +17,7 @@ import com.example.android_app.model.Chapter;
 import com.example.android_app.model.ChapterSummaryResponse;
 import com.example.android_app.model.LibraryItemResponse;
 import com.example.android_app.model.PageResponse;
+import com.example.android_app.model.ReadingHistoryResponse;
 import com.example.android_app.model.StoryDetailResponse;
 import com.example.android_app.network.ApiClient;
 import com.example.android_app.util.ApiErrorParser;
@@ -38,9 +39,12 @@ public class StoryDetailActivity extends AppCompatActivity {
     private String storyCover;
     private int chapterCount;
     private boolean isSaved;
+    private ReadingHistoryResponse readingHistory;
+
     private Call<StoryDetailResponse> detailCall;
     private Call<PageResponse<ChapterSummaryResponse>> chaptersCall;
     private Call<PageResponse<LibraryItemResponse>> libraryCall;
+    private Call<PageResponse<ReadingHistoryResponse>> historyCall;
     private Call<Void> libraryMutationCall;
 
     @Override
@@ -54,6 +58,13 @@ public class StoryDetailActivity extends AppCompatActivity {
         loadStoryDetail();
         loadChapters();
         loadLibraryStatus();
+        loadReadingHistory();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        loadReadingHistory();
     }
 
     @Override
@@ -61,6 +72,7 @@ public class StoryDetailActivity extends AppCompatActivity {
         cancel(detailCall);
         cancel(chaptersCall);
         cancel(libraryCall);
+        cancel(historyCall);
         cancel(libraryMutationCall);
         super.onDestroy();
     }
@@ -96,24 +108,28 @@ public class StoryDetailActivity extends AppCompatActivity {
                 .transition(DrawableTransitionOptions.withCrossFade())
                 .into(binding.ivCover);
 
-        chapterAdapter = new ChapterAdapter(chapter -> openReader(Long.parseLong(chapter.getId())));
+        chapterAdapter = new ChapterAdapter(chapter -> openReader(Long.parseLong(chapter.getId()), chapter.getChapterNumber(), 0));
         binding.rvChapters.setLayoutManager(new LinearLayoutManager(this));
         binding.rvChapters.setAdapter(chapterAdapter);
-        binding.btnReadFirst.setEnabled(false);
+        updateReadButton();
     }
 
     private void setupListeners() {
         binding.btnBack.setOnClickListener(v -> finish());
         binding.btnReadFirst.setOnClickListener(v -> {
-            if (!chapters.isEmpty()) {
-                openReader(chapters.get(0).id);
+            if (readingHistory != null && readingHistory.chapterId != null && readingHistory.chapterId > 0) {
+                int chNo = readingHistory.chapterNo == null ? chapterNumber(readingHistory.chapterId) : readingHistory.chapterNo;
+                int offset = readingHistory.charOffset == null ? 0 : readingHistory.charOffset;
+                openReader(readingHistory.chapterId, chNo, offset);
+            } else if (!chapters.isEmpty()) {
+                openReader(chapters.get(0).id, 1, 0);
             }
         });
         binding.btnBookmark.setOnClickListener(v -> changeLibraryMembership());
     }
 
     private void loadStoryDetail() {
-        String authorization = requireAuthorization();
+        String authorization = requireAuthorization(false);
         if (authorization == null || storyId <= 0) return;
 
         detailCall = ApiClient.api().getStory(authorization, storyId);
@@ -157,7 +173,7 @@ public class StoryDetailActivity extends AppCompatActivity {
     }
 
     private void loadChapters() {
-        String authorization = requireAuthorization();
+        String authorization = requireAuthorization(false);
         if (authorization == null || storyId <= 0) return;
 
         binding.progressBarChapters.setVisibility(View.VISIBLE);
@@ -183,7 +199,7 @@ public class StoryDetailActivity extends AppCompatActivity {
                 }
                 chapterAdapter.setChapters(adapterItems);
                 binding.tvChapterHeader.setText("Danh sách chương (" + chapterCount + " chương)");
-                binding.btnReadFirst.setEnabled(!chapters.isEmpty());
+                updateReadButton();
                 if (chapters.isEmpty()) {
                     Toast.makeText(StoryDetailActivity.this,
                             "Truyện chưa có chương.", Toast.LENGTH_SHORT).show();
@@ -201,7 +217,7 @@ public class StoryDetailActivity extends AppCompatActivity {
     }
 
     private void loadLibraryStatus() {
-        String authorization = requireAuthorization();
+        String authorization = requireAuthorization(false);
         if (authorization == null) return;
         libraryCall = ApiClient.api().getLibrary(authorization, 0, 50);
         libraryCall.enqueue(new Callback<PageResponse<LibraryItemResponse>>() {
@@ -234,8 +250,36 @@ public class StoryDetailActivity extends AppCompatActivity {
         });
     }
 
+    private void loadReadingHistory() {
+        String authorization = requireAuthorization(false);
+        if (authorization == null || storyId <= 0) return;
+        if (historyCall != null) historyCall.cancel();
+        historyCall = ApiClient.api().getReadingHistory(authorization, 0, 50);
+        historyCall.enqueue(new Callback<PageResponse<ReadingHistoryResponse>>() {
+            @Override
+            public void onResponse(Call<PageResponse<ReadingHistoryResponse>> call,
+                                   Response<PageResponse<ReadingHistoryResponse>> response) {
+                if (isFinishing() || call.isCanceled()) return;
+                if (!response.isSuccessful() || response.body() == null) return;
+                readingHistory = null;
+                for (ReadingHistoryResponse item : response.body().items) {
+                    if (item.storyId != null && item.storyId == storyId) {
+                        readingHistory = item;
+                        break;
+                    }
+                }
+                updateReadButton();
+            }
+
+            @Override
+            public void onFailure(Call<PageResponse<ReadingHistoryResponse>> call, Throwable throwable) {
+                // Background check failed, fallback to default
+            }
+        });
+    }
+
     private void changeLibraryMembership() {
-        String authorization = requireAuthorization();
+        String authorization = requireAuthorization(true);
         if (authorization == null || storyId <= 0) return;
         binding.btnBookmark.setEnabled(false);
         libraryMutationCall = isSaved
@@ -274,12 +318,24 @@ public class StoryDetailActivity extends AppCompatActivity {
         binding.btnBookmark.setText(isSaved ? "Đã lưu tủ sách" : "Lưu tủ sách");
     }
 
-    private void openReader(long chapterId) {
+    private void updateReadButton() {
+        if (readingHistory != null && readingHistory.chapterId != null && readingHistory.chapterId > 0) {
+            int chNo = readingHistory.chapterNo == null ? 1 : readingHistory.chapterNo;
+            binding.btnReadFirst.setText("Đọc tiếp (Chương " + chNo + ")");
+            binding.btnReadFirst.setEnabled(true);
+        } else {
+            binding.btnReadFirst.setText("Đọc từ đầu");
+            binding.btnReadFirst.setEnabled(!chapters.isEmpty());
+        }
+    }
+
+    private void openReader(long chapterId, int chapterNo, int charOffset) {
         Intent intent = new Intent(this, ReaderActivity.class);
         intent.putExtra("story_id", storyId);
         intent.putExtra("story_name", storyName);
         intent.putExtra("chapter_id", chapterId);
-        intent.putExtra("chapter_number", chapterNumber(chapterId));
+        intent.putExtra("chapter_number", chapterNo);
+        intent.putExtra("char_offset", charOffset);
         intent.putExtra("total_chapters", chapterCount);
         long[] chapterIds = new long[chapters.size()];
         int[] chapterNumbers = new int[chapters.size()];
@@ -305,9 +361,9 @@ public class StoryDetailActivity extends AppCompatActivity {
         return 1;
     }
 
-    private String requireAuthorization() {
+    private String requireAuthorization(boolean showToast) {
         String authorization = ApiClient.authorization(this);
-        if (authorization == null) {
+        if (authorization == null && showToast) {
             Toast.makeText(this, "Vui lòng đăng nhập để sử dụng chức năng này.",
                     Toast.LENGTH_LONG).show();
         }
