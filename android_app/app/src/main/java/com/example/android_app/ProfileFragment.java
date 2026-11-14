@@ -1,5 +1,6 @@
 package com.example.android_app;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -7,6 +8,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -25,6 +28,14 @@ public class ProfileFragment extends Fragment {
     private FragmentProfileBinding binding;
     private Call<UserResponse> currentUserCall;
 
+    private final ActivityResultLauncher<Intent> editProfileLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == Activity.RESULT_OK) {
+                    loadUserData();
+                }
+            });
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -40,6 +51,12 @@ public class ProfileFragment extends Fragment {
         setupListeners();
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        loadUserData();
+    }
+
     private void loadUserData() {
         String token = AuthPreferences.getToken(requireContext());
         if (token == null || token.trim().isEmpty()) {
@@ -50,6 +67,7 @@ public class ProfileFragment extends Fragment {
             return;
         }
 
+        if (currentUserCall != null) currentUserCall.cancel();
         currentUserCall = ApiClient.auth().getCurrentUser("Bearer " + token);
         currentUserCall.enqueue(new Callback<UserResponse>() {
             @Override
@@ -93,14 +111,26 @@ public class ProfileFragment extends Fragment {
     private void setupListeners() {
         // Chỉnh sửa thông tin
         binding.btnEditProfile.setOnClickListener(v -> {
-            // [GIẢ LẬP] Mở màn hình chỉnh sửa hồ sơ
-            Toast.makeText(requireContext(), "Mở màn hình Chỉnh sửa thông tin cá nhân", Toast.LENGTH_SHORT).show();
+            String token = AuthPreferences.getToken(requireContext());
+            if (token == null || token.trim().isEmpty()) {
+                Toast.makeText(requireContext(), "Vui lòng đăng nhập để chỉnh sửa thông tin.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            Intent intent = new Intent(requireContext(), EditProfileActivity.class);
+            intent.putExtra("email", binding.tvEmail.getText().toString());
+            intent.putExtra("display_name", binding.tvDisplayName.getText().toString());
+            editProfileLauncher.launch(intent);
         });
 
         // Đổi mật khẩu
         binding.btnChangePassword.setOnClickListener(v -> {
-            // [GIẢ LẬP] Mở màn hình đổi mật khẩu
-            Toast.makeText(requireContext(), "Mở màn hình Đổi mật khẩu", Toast.LENGTH_SHORT).show();
+            String token = AuthPreferences.getToken(requireContext());
+            if (token == null || token.trim().isEmpty()) {
+                Toast.makeText(requireContext(), "Vui lòng đăng nhập để đổi mật khẩu.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            Intent intent = new Intent(requireContext(), ChangePasswordActivity.class);
+            startActivity(intent);
         });
 
         // Tủ sách cá nhân

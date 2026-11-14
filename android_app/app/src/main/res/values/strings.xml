@@ -80,4 +80,18 @@
     <string name="chapter_count">%d chương</string>
     <string name="recently_reading">Đang đọc</string>
 
+    <!-- Chỉnh sửa hồ sơ & Đổi mật khẩu -->
+    <string name="edit_profile_title">Chỉnh sửa hồ sơ</string>
+    <string name="edit_profile_subtitle">Cập nhật tên hiển thị tài khoản cá nhân</string>
+    <string name="btn_save_changes">Lưu thay đổi</string>
+    <string name="toast_update_profile_success">Cập nhật thông tin thành công!</string>
+    <string name="error_update_profile_failed">Không cập nhật được thông tin cá nhân.</string>
+
+    <string name="change_password_title">Đổi mật khẩu</string>
+    <string name="change_password_subtitle">Nhập mật khẩu hiện tại và mật khẩu mới của bạn</string>
+    <string name="hint_current_password">Mật khẩu hiện tại</string>
+    <string name="error_empty_current_password">Vui lòng nhập mật khẩu hiện tại</string>
+    <string name="toast_change_password_success">Đổi mật khẩu thành công!</string>
+    <string name="error_change_password_failed">Đổi mật khẩu thất bại. Hãy kiểm tra lại mật khẩu hiện tại.</string>
+
 </resources>
