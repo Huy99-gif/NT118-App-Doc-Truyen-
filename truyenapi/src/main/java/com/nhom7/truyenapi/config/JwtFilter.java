@@ -28,6 +28,7 @@ public class JwtFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain chain) throws ServletException, IOException {
         String header = request.getHeader("Authorization");
+        // lấy token từ header bearer gửi lên
         if (header != null && header.startsWith("Bearer ")) {
             String token = header.substring(7);
             try {
@@ -35,6 +36,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 var auth = new UsernamePasswordAuthenticationToken(email, null, List.of());
                 SecurityContextHolder.getContext().setAuthentication(auth);
             } catch (JwtException | IllegalArgumentException exception) {
+                // token hỏng hoặc hết hạn thì xóa context rồi trả 401
                 SecurityContextHolder.clearContext();
                 errorResponseWriter.writeUnauthorizedToken(response);
                 return;

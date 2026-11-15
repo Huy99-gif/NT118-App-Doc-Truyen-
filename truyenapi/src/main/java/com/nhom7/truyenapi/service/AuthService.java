@@ -84,6 +84,7 @@ public class AuthService {
         String email = normalizeEmail(request.email());
         User user = users.findByEmail(email).orElse(null);
         if (user == null) {
+            // so sánh giả để tốn thời gian bằng nhau, chống timing attack dò mail
             encoder.matches(request.password(), dummyPasswordHash);
             throw new ApiException(HttpStatus.UNAUTHORIZED, INVALID_CREDENTIALS);
         }
@@ -113,9 +114,11 @@ public class AuthService {
         String email = normalizeEmail(request.email());
         User user = users.findByEmail(email).orElse(null);
         if (user == null) {
+            // ko báo mail sai để tránh lộ user trong hệ thống
             return new MessageResponse(FORGOT_PASSWORD_MESSAGE);
         }
 
+        // hủy hết token cũ chưa dùng trước khi tạo cái mới
         resetTokens.findAllByUserAndUsedFalse(user).forEach(token -> token.setUsed(true));
 
         String rawToken = generateResetToken();

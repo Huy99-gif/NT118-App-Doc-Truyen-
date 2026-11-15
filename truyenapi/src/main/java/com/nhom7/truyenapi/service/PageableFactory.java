@@ -28,6 +28,7 @@ public class PageableFactory {
         }
 
         Sort safeSort = sort == null ? Sort.unsorted() : sort;
+        // chặn ko cho client truyền field bậy bạ vào sort
         if (safeSort.stream().anyMatch(order -> !ALLOWED_SORT_FIELDS.contains(order.getProperty()))) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Trường sắp xếp không hợp lệ");
         }

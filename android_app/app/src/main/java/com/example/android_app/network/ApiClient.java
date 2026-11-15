@@ -25,6 +25,7 @@ public final class ApiClient {
 
         Context applicationContext = context.getApplicationContext();
         SessionManager manager = new SessionManager(applicationContext);
+        // gắn interceptor để bắt 401 tự logout
         OkHttpClient client = new OkHttpClient.Builder()
                 .addInterceptor(new AuthInterceptor(manager))
                 .build();

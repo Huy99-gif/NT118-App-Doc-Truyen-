@@ -18,6 +18,7 @@ public class CurrentUserService {
     }
 
     public User getCurrentUser() {
+        // lấy email từ security context do jwt filter đã set trước đó
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()
                 || authentication instanceof AnonymousAuthenticationToken) {

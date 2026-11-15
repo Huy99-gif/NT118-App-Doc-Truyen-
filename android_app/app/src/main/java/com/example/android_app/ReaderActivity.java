@@ -111,6 +111,7 @@ public class ReaderActivity extends AppCompatActivity {
                 (androidx.core.widget.NestedScrollView view, int scrollX, int scrollY,
                  int oldScrollX, int oldScrollY) -> {
                     if (chapterId > 0) {
+                        // debounce 1.2s ngưng cuộn mới lưu vị trí đọc tránh spam api
                         handler.removeCallbacks(saveProgressTask);
                         handler.postDelayed(saveProgressTask, 1200);
                     }

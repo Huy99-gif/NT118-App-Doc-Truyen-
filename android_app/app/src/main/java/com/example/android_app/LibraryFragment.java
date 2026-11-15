@@ -94,6 +94,7 @@ public class LibraryFragment extends Fragment {
 
     private void setupAdapters() {
         storyAdapter = new StoryAdapter(story -> {
+            // nếu đang đọc dở thì bấm vào nhảy thẳng tới chương và vị trí ký tự đó
             if (story.isReading() && story.getInitialChapterId() > 0) {
                 Intent intent = new Intent(requireContext(), ReaderActivity.class);
                 intent.putExtra("story_id", Long.parseLong(story.getId()));

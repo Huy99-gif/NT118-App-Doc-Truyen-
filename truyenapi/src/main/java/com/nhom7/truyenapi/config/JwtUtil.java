@@ -24,6 +24,7 @@ public class JwtUtil {
     }
 
     JwtUtil(String secret, long expirationMs, Clock clock) {
+        // khóa bí mật phải đủ 256 bits ko là jjwt nó throw lỗi
         if (secret == null || secret.isBlank() || secret.length() < 32
                 || secret.getBytes(StandardCharsets.UTF_8).length < 32) {
             throw new IllegalStateException("app.jwt.secret phải có ít nhất 32 ký tự");
@@ -45,6 +46,7 @@ public class JwtUtil {
     }
 
     public String extractEmail(String token) {
+        // parse token nếu hết hạn hoặc sai chữ ký nó tự ném exception
         String email = Jwts.parser().verifyWith(key).build()
                 .parseSignedClaims(token).getPayload().getSubject();
         if (email == null || email.isBlank()) {

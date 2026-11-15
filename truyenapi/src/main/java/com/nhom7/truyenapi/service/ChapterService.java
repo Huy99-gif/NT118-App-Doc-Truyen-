@@ -70,6 +70,7 @@ public class ChapterService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Mỗi lần chỉ được tải tối đa 20 chương");
         }
 
+        // giữ đúng thứ tự id truyền vào từ client
         Map<Long, ChapterDetailResponse> foundById = chapters.findDetailsByIdIn(uniqueIds).stream()
                 .collect(Collectors.toMap(ChapterDetailResponse::id, chapter -> chapter));
         List<ChapterDetailResponse> orderedResults = new ArrayList<>();
