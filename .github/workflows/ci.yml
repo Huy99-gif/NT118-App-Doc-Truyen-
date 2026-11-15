@@ -59,7 +59,8 @@ jobs:
           echo "Backend: $backend | Android: $android"
 
   # ---------------------------------------------------------------
-  # 2. Backend: test + PostgreSQL thật + build jar + chạy thử app
+  # 2. Backend: test (H2 theo cấu hình test) + build jar
+  #    + smoke test chạy jar với PostgreSQL thật
   # ---------------------------------------------------------------
   backend:
     name: Backend (Java 17 + PostgreSQL 16)
@@ -72,6 +73,7 @@ jobs:
         working-directory: truyenapi
 
     # PostgreSQL tạm: sinh ra khi job bắt đầu, mất khi job xong
+    # Chỉ dùng cho bước Smoke test bên dưới (test Maven dùng H2)
     services:
       postgres:
         image: postgres:16
@@ -87,12 +89,9 @@ jobs:
           --health-timeout 5s
           --health-retries 10
 
-    # Spring Boot tự đọc các biến này và ghi đè application.properties
-    env:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/truyendb
-      SPRING_DATASOURCE_USERNAME: truyen
-      SPRING_DATASOURCE_PASSWORD: truyen_ci_pass
-      JWT_SECRET: ci-only-jwt-secret-key-at-least-32-characters-long
+    # LƯU Ý: không đặt SPRING_DATASOURCE_* ở cấp job nữa.
+    # Biến môi trường sẽ ghi đè cấu hình test (H2) và làm Flyway lỗi
+    # "Driver org.h2.Driver claims to not accept jdbcUrl, jdbc:postgresql://..."
 
     steps:
       - uses: actions/checkout@v4
@@ -106,8 +105,8 @@ jobs:
       - name: Cho phép chạy mvnw
         run: chmod +x mvnw
 
-      # verify = chạy toàn bộ test rồi đóng gói jar
-      - name: Build và test (có PostgreSQL thật)
+      # verify = chạy toàn bộ test (H2) rồi đóng gói jar
+      - name: Build và test
         run: ./mvnw -B -ntp clean verify
 
       - name: Tóm tắt kết quả test
@@ -124,8 +123,20 @@ jobs:
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
-      # Chạy thử file jar với PostgreSQL: chứng minh app khởi động được
-      - name: Smoke test (chạy jar, kết nối DB)
+      # Khi test lỗi: in nhanh nguyên nhân gốc, khỏi phải lục log dài
+      - name: In nguyên nhân gốc khi test lỗi
+        if: failure()
+        run: |
+          grep -h -m1 -A3 "APPLICATION FAILED TO START" target/surefire-reports/*.txt || true
+          grep -h "Caused by:" target/surefire-reports/*.txt | sort | uniq -c | sort -rn | head -n 10 || true
+
+      # Chạy thử file jar với PostgreSQL thật: chứng minh app + Flyway chạy được trên Postgres
+      - name: Smoke test (chạy jar, kết nối PostgreSQL thật)
+        env:
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/truyendb
+          SPRING_DATASOURCE_USERNAME: truyen
+          SPRING_DATASOURCE_PASSWORD: truyen_ci_pass
+          JWT_SECRET: ci-only-jwt-secret-key-at-least-32-characters-long
         run: |
           JAR="$(ls target/*.jar | grep -v 'plain' | head -n 1)"
           echo "Chạy $JAR"
