@@ -50,6 +50,7 @@ public class BookmarkService {
         String note = request.note() == null ? null : request.note().trim();
 
         return transactionTemplate.execute(status -> {
+            // lock row user để tránh trường hợp đếm xong bị request khác chèn vào vượt quá max limit
             User user = users.findByIdForUpdate(userId)
                     .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Chưa đăng nhập"));
             Chapter chapter = chapters.findById(request.chapterId())

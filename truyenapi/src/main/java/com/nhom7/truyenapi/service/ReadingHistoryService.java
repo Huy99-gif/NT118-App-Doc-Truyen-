@@ -81,6 +81,7 @@ public class ReadingHistoryService {
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Chưa đăng nhập"));
         Story story = stories.findById(request.storyId())
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy truyện"));
+        // kiểm tra xem chương đọc có đúng thuộc về bộ truyện đó ko
         Chapter chapter = chapters.findByIdAndStory_Id(request.chapterId(), request.storyId())
                 .orElseThrow(() -> new ApiException(
                         HttpStatus.BAD_REQUEST, "Chương không thuộc truyện đã chọn"));

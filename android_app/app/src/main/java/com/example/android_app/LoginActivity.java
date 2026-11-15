@@ -34,6 +34,7 @@ public class LoginActivity extends AppCompatActivity {
                 SessionManager.EXTRA_SESSION_EXPIRED, false)
                 || AuthPreferences.isSessionExpired(this);
         AuthPreferences.setSessionExpired(this, false);
+        // hiện toast báo hết hạn phiên nếu interceptor đá về login
         if (sessionExpired) {
             getIntent().removeExtra(SessionManager.EXTRA_SESSION_EXPIRED);
             Toast.makeText(this, "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại",

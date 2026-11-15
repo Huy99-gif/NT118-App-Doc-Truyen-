@@ -106,6 +106,7 @@ public class StoryService {
     }
 
     private String escapeLikeWildcards(String value) {
+        // escape ký tự đặc biệt % _ để khỏi bị lỗi sql wildcard
         return value.replace("!", "!!")
                 .replace("%", "!%")
                 .replace("_", "!_");

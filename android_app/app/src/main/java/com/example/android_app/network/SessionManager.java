@@ -34,6 +34,7 @@ public final class SessionManager {
     public void handleUnauthorized(String requestAuthorization) {
         synchronized (this) {
             String currentToken = AuthPreferences.getToken(applicationContext);
+            // so sánh xem request bị 401 có đúng là của token hiện tại ko
             if (currentToken == null
                     || !("Bearer " + currentToken).equals(requestAuthorization)
                     || !logoutStarted.compareAndSet(false, true)) {

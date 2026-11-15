@@ -20,6 +20,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http, JwtFilter jwtFilter,
                                            SecurityErrorResponseWriter errorResponseWriter) throws Exception {
+        // api rest không dùng session nên tắt csrf luôn cho nhẹ
         http.csrf(csrf -> csrf.disable())
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
@@ -33,6 +34,7 @@ public class SecurityConfig {
                     errorResponseWriter.writeUnauthorized(response))
                 .accessDeniedHandler((request, response, exception) ->
                     errorResponseWriter.writeForbidden(response)))
+            // nhét jwt filter vào trước filter login mặc định của spring
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }

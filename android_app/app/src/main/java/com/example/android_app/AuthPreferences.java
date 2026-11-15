@@ -33,6 +33,7 @@ public final class AuthPreferences {
     }
 
     public static void clear(Context context) {
+        // xóa token khỏi preference khi logout
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                 .edit()
                 .remove(KEY_TOKEN)

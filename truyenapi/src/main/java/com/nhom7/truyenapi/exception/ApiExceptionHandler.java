@@ -24,6 +24,7 @@ public class ApiExceptionHandler {
             "(?i)(users\\s*\\(\\s*email\\b|key\\s*\\(\\s*email\\s*\\)|"
                     + "users_email_key|unique.*\\bemail\\b|\\bemail\\b.*unique)");
 
+    // bắt lỗi api tự định nghĩa trả về json dạng {"error": "..."}
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<Map<String, String>> handleApiException(ApiException exception) {
         return ResponseEntity.status(exception.getStatus())

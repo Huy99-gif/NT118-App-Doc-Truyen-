@@ -106,6 +106,7 @@ public class StoryDetailActivity extends AppCompatActivity {
         binding.btnBack.setOnClickListener(v -> finish());
         binding.btnReadFirst.setOnClickListener(v -> {
             if (!chapters.isEmpty()) {
+                // đọc chương đầu tiên trong danh sách
                 openReader(chapters.get(0).id);
             }
         });

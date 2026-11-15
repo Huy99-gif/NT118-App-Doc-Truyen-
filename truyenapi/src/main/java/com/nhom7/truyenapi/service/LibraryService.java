@@ -78,6 +78,7 @@ public class LibraryService {
                 return true;
             });
         } catch (DataIntegrityViolationException exception) {
+            // catch trường hợp 2 request cùng bấm thêm vào tủ sách một lúc bị dính unique constraint
             if (libraries.existsById(libraryId)) {
                 return false;
             }

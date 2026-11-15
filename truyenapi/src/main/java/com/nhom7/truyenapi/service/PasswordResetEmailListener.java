@@ -18,6 +18,7 @@ public class PasswordResetEmailListener {
         this.emailService = emailService;
     }
 
+    // chỉ gửi mail khi db commit xong, tránh trường hợp rollback nhưng vẫn gửi mail
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void sendPasswordResetEmail(PasswordResetRequestedEvent event) {

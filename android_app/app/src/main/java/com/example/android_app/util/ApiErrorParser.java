@@ -16,6 +16,7 @@ public final class ApiErrorParser {
         }
 
         try {
+            // parse chuỗi json {"error": "..."} từ backend
             String message = new JSONObject(response.errorBody().string()).optString("error");
             return message.isEmpty() ? fallback : message;
         } catch (IOException | JSONException exception) {
