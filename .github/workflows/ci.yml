@@ -1,0 +1,262 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Push liên tiếp thì hủy lần chạy cũ cho đỡ tốn phút
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # ---------------------------------------------------------------
+  # 1. Xem file nào đổi để chỉ chạy phần liên quan
+  # ---------------------------------------------------------------
+  impact:
+    name: Change impact
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      backend: ${{ steps.classify.outputs.backend }}
+      android: ${{ steps.classify.outputs.android }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Phân loại file thay đổi
+        id: classify
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+        run: |
+          backend=true; android=true
+          if [ "$EVENT" = "pull_request" ]; then
+            changed="$(git diff --name-only "$PR_BASE"...HEAD || true)"
+            have_base=true; [ -z "$changed" ] && have_base=false
+          elif [ "$EVENT" = "push" ] && [[ "$PUSH_BEFORE" =~ ^[0-9a-f]{40}$ ]] \
+               && [ "$PUSH_BEFORE" != "0000000000000000000000000000000000000000" ]; then
+            changed="$(git diff --name-only "$PUSH_BEFORE" HEAD || true)"
+            have_base=true; [ -z "$changed" ] && have_base=false
+          else
+            have_base=false   # chạy tay hoặc push đầu tiên: chạy tất cả
+          fi
+
+          if [ "$have_base" = true ]; then
+            backend=false; android=false
+            echo "$changed" | grep -qE '^(truyenapi/|deploy/|\.github/)' && backend=true
+            echo "$changed" | grep -qE '^(android_app/|\.github/)'      && android=true
+          fi
+          echo "backend=$backend" >> "$GITHUB_OUTPUT"
+          echo "android=$android" >> "$GITHUB_OUTPUT"
+          echo "Backend: $backend | Android: $android"
+
+  # ---------------------------------------------------------------
+  # 2. Backend: test + PostgreSQL thật + build jar + chạy thử app
+  # ---------------------------------------------------------------
+  backend:
+    name: Backend (Java 17 + PostgreSQL 16)
+    needs: impact
+    if: ${{ needs.impact.outputs.backend == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: truyenapi
+
+    # PostgreSQL tạm: sinh ra khi job bắt đầu, mất khi job xong
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: truyendb
+          POSTGRES_USER: truyen
+          POSTGRES_PASSWORD: truyen_ci_pass   # chỉ dùng cho DB tạm trong CI
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U truyen -d truyendb"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    # Spring Boot tự đọc các biến này và ghi đè application.properties
+    env:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/truyendb
+      SPRING_DATASOURCE_USERNAME: truyen
+      SPRING_DATASOURCE_PASSWORD: truyen_ci_pass
+      JWT_SECRET: ci-only-jwt-secret-key-at-least-32-characters-long
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Cho phép chạy mvnw
+        run: chmod +x mvnw
+
+      # verify = chạy toàn bộ test rồi đóng gói jar
+      - name: Build và test (có PostgreSQL thật)
+        run: ./mvnw -B -ntp clean verify
+
+      - name: Tóm tắt kết quả test
+        if: always()
+        run: |
+          {
+            echo "### Backend test"
+            if ls target/surefire-reports/*.txt >/dev/null 2>&1; then
+              echo '```'
+              grep -h "Tests run:" target/surefire-reports/*.txt
+              echo '```'
+            else
+              echo "Không có báo cáo test."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Chạy thử file jar với PostgreSQL: chứng minh app khởi động được
+      - name: Smoke test (chạy jar, kết nối DB)
+        run: |
+          JAR="$(ls target/*.jar | grep -v 'plain' | head -n 1)"
+          echo "Chạy $JAR"
+          nohup java -jar "$JAR" > app.log 2>&1 &
+          for i in $(seq 1 45); do
+            code="$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/error || true)"
+            if [ "$code" != "000" ]; then
+              echo "App đã chạy (HTTP $code) sau $((i*2)) giây"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "App không khởi động được. 60 dòng log cuối:"
+          tail -n 60 app.log
+          exit 1
+
+      - name: Lưu báo cáo test
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-surefire-reports
+          path: truyenapi/target/surefire-reports
+          retention-days: 14
+
+      - name: Lưu log app (smoke test)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-app-log
+          path: truyenapi/app.log
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Lưu file jar
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-jar
+          path: truyenapi/target/*.jar
+          retention-days: 7
+
+  # ---------------------------------------------------------------
+  # 3. Android: unit test + lint + build APK
+  #    Tự bỏ qua nếu android_app/ chưa có project Gradle
+  # ---------------------------------------------------------------
+  android:
+    name: Android (unit test, lint, build)
+    needs: impact
+    if: ${{ needs.impact.outputs.android == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Kiểm tra project Android đã có chưa
+        id: detect
+        run: |
+          if [ -f android_app/gradlew ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::android_app/ chưa có gradlew, bỏ qua job Android."
+          fi
+
+      - uses: actions/setup-java@v4
+        if: steps.detect.outputs.exists == 'true'
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        if: steps.detect.outputs.exists == 'true'
+
+      - name: Unit test
+        if: steps.detect.outputs.exists == 'true'
+        working-directory: android_app
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon testDebugUnitTest
+
+      - name: Lint
+        if: steps.detect.outputs.exists == 'true'
+        working-directory: android_app
+        run: ./gradlew --no-daemon lintDebug
+
+      - name: Build APK debug
+        if: steps.detect.outputs.exists == 'true'
+        working-directory: android_app
+        run: ./gradlew --no-daemon assembleDebug
+
+      - name: Lưu báo cáo test và lint
+        if: always() && steps.detect.outputs.exists == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-reports
+          path: |
+            android_app/**/build/reports
+            android_app/**/build/test-results
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Lưu APK debug
+        if: success() && steps.detect.outputs.exists == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-debug-apk
+          path: android_app/**/build/outputs/apk/debug/*.apk
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # ---------------------------------------------------------------
+  # 4. Cổng tổng: một check duy nhất để đặt làm bắt buộc khi merge
+  # ---------------------------------------------------------------
+  ci-gate:
+    name: CI gate
+    if: always()
+    needs: [impact, backend, android]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Từ chối nếu có job lỗi hoặc bị hủy
+        env:
+          IMPACT: ${{ needs.impact.result }}
+          BACKEND: ${{ needs.backend.result }}
+          ANDROID: ${{ needs.android.result }}
+        run: |
+          echo "impact=$IMPACT backend=$BACKEND android=$ANDROID"
+          for r in "$IMPACT" "$BACKEND" "$ANDROID"; do
+            if [ "$r" = "failure" ] || [ "$r" = "cancelled" ]; then
+              echo "::error::Có job thất bại hoặc bị hủy."
+              exit 1
+            fi
+          done
+          echo "Tất cả job đều xanh hoặc được bỏ qua hợp lệ."
