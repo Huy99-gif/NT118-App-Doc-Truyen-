@@ -12,6 +12,7 @@ import com.example.android_app.databinding.ActivityLoginBinding;
 import com.example.android_app.model.LoginRequest;
 import com.example.android_app.model.LoginResponse;
 import com.example.android_app.network.ApiClient;
+import com.example.android_app.network.SessionManager;
 import com.example.android_app.util.ApiErrorParser;
 
 import retrofit2.Call;
@@ -28,6 +29,16 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         binding = ActivityLoginBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+
+        boolean sessionExpired = getIntent().getBooleanExtra(
+                SessionManager.EXTRA_SESSION_EXPIRED, false)
+                || AuthPreferences.isSessionExpired(this);
+        AuthPreferences.setSessionExpired(this, false);
+        if (sessionExpired) {
+            getIntent().removeExtra(SessionManager.EXTRA_SESSION_EXPIRED);
+            Toast.makeText(this, "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại",
+                    Toast.LENGTH_LONG).show();
+        }
 
         setupListeners();
     }
@@ -97,7 +108,7 @@ public class LoginActivity extends AppCompatActivity {
                     return;
                 }
 
-                AuthPreferences.saveToken(LoginActivity.this, loginResponse.getToken());
+                ApiClient.onLoginSuccess(loginResponse.getToken());
                 Toast.makeText(LoginActivity.this, R.string.toast_login_success, Toast.LENGTH_SHORT).show();
                 startActivity(new Intent(LoginActivity.this, MainActivity.class));
                 finish();

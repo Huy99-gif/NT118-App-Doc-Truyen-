@@ -54,7 +54,7 @@ public class ProfileFragment extends Fragment {
         currentUserCall.enqueue(new Callback<UserResponse>() {
             @Override
             public void onResponse(Call<UserResponse> call, Response<UserResponse> response) {
-                if (binding == null) return;
+                if (binding == null || !isAdded()) return;
                 if (!response.isSuccessful()) {
                     Toast.makeText(requireContext(),
                             ApiErrorParser.getMessage(response, getString(R.string.error_profile_load_failed)),
@@ -77,7 +77,7 @@ public class ProfileFragment extends Fragment {
 
             @Override
             public void onFailure(Call<UserResponse> call, Throwable throwable) {
-                if (binding == null || call.isCanceled()) return;
+                if (binding == null || !isAdded() || call.isCanceled()) return;
                 Toast.makeText(requireContext(),
                         R.string.error_server_unreachable, Toast.LENGTH_LONG).show();
             }

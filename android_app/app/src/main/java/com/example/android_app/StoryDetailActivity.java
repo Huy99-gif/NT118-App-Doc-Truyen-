@@ -121,7 +121,7 @@ public class StoryDetailActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<StoryDetailResponse> call,
                                    Response<StoryDetailResponse> response) {
-                if (isFinishing() || call.isCanceled()) return;
+                if (isFinishing() || isDestroyed() || call.isCanceled()) return;
                 if (!response.isSuccessful() || response.body() == null) {
                     showError(response, "Không tải được thông tin truyện.");
                     return;
@@ -148,7 +148,7 @@ public class StoryDetailActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<StoryDetailResponse> call, Throwable throwable) {
-                if (!isFinishing() && !call.isCanceled()) {
+                if (!isFinishing() && !isDestroyed() && !call.isCanceled()) {
                     Toast.makeText(StoryDetailActivity.this,
                             R.string.error_server_unreachable, Toast.LENGTH_LONG).show();
                 }
@@ -166,7 +166,7 @@ public class StoryDetailActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<PageResponse<ChapterSummaryResponse>> call,
                                    Response<PageResponse<ChapterSummaryResponse>> response) {
-                if (isFinishing() || call.isCanceled()) return;
+                if (isFinishing() || isDestroyed() || call.isCanceled()) return;
                 binding.progressBarChapters.setVisibility(View.GONE);
                 if (!response.isSuccessful() || response.body() == null) {
                     showError(response, "Không tải được danh sách chương.");
@@ -192,7 +192,7 @@ public class StoryDetailActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<PageResponse<ChapterSummaryResponse>> call, Throwable throwable) {
-                if (isFinishing() || call.isCanceled()) return;
+                if (isFinishing() || isDestroyed() || call.isCanceled()) return;
                 binding.progressBarChapters.setVisibility(View.GONE);
                 Toast.makeText(StoryDetailActivity.this,
                         R.string.error_server_unreachable, Toast.LENGTH_LONG).show();
@@ -208,7 +208,7 @@ public class StoryDetailActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<PageResponse<LibraryItemResponse>> call,
                                    Response<PageResponse<LibraryItemResponse>> response) {
-                if (isFinishing() || call.isCanceled()) return;
+                if (isFinishing() || isDestroyed() || call.isCanceled()) return;
                 if (!response.isSuccessful() || response.body() == null) {
                     showError(response, "Không kiểm tra được tủ sách.");
                     return;
@@ -225,7 +225,7 @@ public class StoryDetailActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<PageResponse<LibraryItemResponse>> call, Throwable throwable) {
-                if (!isFinishing() && !call.isCanceled()) {
+                if (!isFinishing() && !isDestroyed() && !call.isCanceled()) {
                     Toast.makeText(StoryDetailActivity.this,
                             "Không kiểm tra được trạng thái tủ sách.",
                             Toast.LENGTH_LONG).show();
@@ -245,7 +245,7 @@ public class StoryDetailActivity extends AppCompatActivity {
         libraryMutationCall.enqueue(new Callback<Void>() {
             @Override
             public void onResponse(Call<Void> call, Response<Void> response) {
-                if (isFinishing() || call.isCanceled()) return;
+                if (isFinishing() || isDestroyed() || call.isCanceled()) return;
                 binding.btnBookmark.setEnabled(true);
                 if (!response.isSuccessful()) {
                     Toast.makeText(StoryDetailActivity.this,
@@ -262,7 +262,7 @@ public class StoryDetailActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<Void> call, Throwable throwable) {
-                if (isFinishing() || call.isCanceled()) return;
+                if (isFinishing() || isDestroyed() || call.isCanceled()) return;
                 binding.btnBookmark.setEnabled(true);
                 Toast.makeText(StoryDetailActivity.this,
                         R.string.error_server_unreachable, Toast.LENGTH_LONG).show();

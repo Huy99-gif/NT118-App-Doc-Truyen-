@@ -76,6 +76,7 @@ public class ReaderActivity extends AppCompatActivity {
         cancel(chapterCall);
         cancel(chaptersCall);
         cancel(bookmarkCall);
+        cancel(historyCall);
         super.onDestroy();
     }
 
@@ -135,7 +136,7 @@ public class ReaderActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<ChapterDetailResponse> call,
                                    Response<ChapterDetailResponse> response) {
-                if (isFinishing() || call.isCanceled()) return;
+                if (isFinishing() || isDestroyed() || call.isCanceled()) return;
                 binding.progressBarReader.setVisibility(View.GONE);
                 if (!response.isSuccessful() || response.body() == null) {
                     Toast.makeText(ReaderActivity.this,
@@ -166,7 +167,7 @@ public class ReaderActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<ChapterDetailResponse> call, Throwable throwable) {
-                if (isFinishing() || call.isCanceled()) return;
+                if (isFinishing() || isDestroyed() || call.isCanceled()) return;
                 binding.progressBarReader.setVisibility(View.GONE);
                 Toast.makeText(ReaderActivity.this,
                         R.string.error_server_unreachable, Toast.LENGTH_LONG).show();
@@ -183,7 +184,7 @@ public class ReaderActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<PageResponse<ChapterSummaryResponse>> call,
                                    Response<PageResponse<ChapterSummaryResponse>> response) {
-                if (isFinishing() || call.isCanceled() || !response.isSuccessful()
+                if (isFinishing() || isDestroyed() || call.isCanceled() || !response.isSuccessful()
                         || response.body() == null) return;
                 List<ChapterSummaryResponse> items = response.body().items;
                 chapterIds = new long[items.size()];
@@ -263,7 +264,7 @@ public class ReaderActivity extends AppCompatActivity {
         bookmarkCall.enqueue(new Callback<BookmarkResponse>() {
             @Override
             public void onResponse(Call<BookmarkResponse> call, Response<BookmarkResponse> response) {
-                if (isFinishing() || call.isCanceled()) return;
+                if (isFinishing() || isDestroyed() || call.isCanceled()) return;
                 if (!response.isSuccessful() || response.body() == null) {
                     Toast.makeText(ReaderActivity.this,
                             ApiErrorParser.getMessage(response, "Không tạo được dấu trang."),
@@ -275,7 +276,7 @@ public class ReaderActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<BookmarkResponse> call, Throwable throwable) {
-                if (!isFinishing() && !call.isCanceled()) {
+                if (!isFinishing() && !isDestroyed() && !call.isCanceled()) {
                     Toast.makeText(ReaderActivity.this, R.string.error_server_unreachable,
                             Toast.LENGTH_LONG).show();
                 }
@@ -298,6 +299,7 @@ public class ReaderActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<ReadingHistoryResponse> call,
                                    Response<ReadingHistoryResponse> response) {
+                if (call.isCanceled() || isFinishing() || isDestroyed()) return;
                 if (!response.isSuccessful() && !call.isCanceled()) {
                     Log.w(TAG, "Lưu lịch sử đọc thất bại: HTTP " + response.code());
                 }
@@ -306,6 +308,7 @@ public class ReaderActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<ReadingHistoryResponse> call, Throwable throwable) {
+                if (call.isCanceled() || isFinishing() || isDestroyed()) return;
                 if (!call.isCanceled()) Log.w(TAG, "Không lưu được lịch sử đọc.", throwable);
                 finishHistorySave();
             }

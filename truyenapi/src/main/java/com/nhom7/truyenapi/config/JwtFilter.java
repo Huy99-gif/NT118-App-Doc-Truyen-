@@ -40,6 +40,6 @@ public class JwtFilter extends OncePerRequestFilter {
                 return;
             }
         }
-        chain.doFilter(request, response);
+        chain.doFilter(request, response); // Lệnh mở cổng để Spring gọi đến Controller
     }
 }
