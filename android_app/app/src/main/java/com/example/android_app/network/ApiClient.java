@@ -7,7 +7,7 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 public final class ApiClient {
-    private static final String BASE_URL = "http://10.0.3.2:8080/"; // backend local
+    private static final String BASE_URL = "https://truyen-api-42dk.onrender.com/"; // backend local
     //private static final String BASE_URL = "http://32.194.224.117:8080/";
     private static volatile AuthApi authApi;
     private static volatile TruyenApi api;
