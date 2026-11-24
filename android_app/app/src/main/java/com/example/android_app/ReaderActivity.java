@@ -107,6 +107,7 @@ public class ReaderActivity extends AppCompatActivity {
         binding.btnNextChapter.setOnClickListener(v -> navigateChapter(1));
         binding.btnChapterList.setOnClickListener(v -> showChapterList());
         binding.btnAddBookmark.setOnClickListener(v -> showCreateBookmarkDialog());
+        binding.btnComments.setOnClickListener(v -> showComments());
         binding.scrollView.setOnScrollChangeListener(
                 (androidx.core.widget.NestedScrollView view, int scrollX, int scrollY,
                  int oldScrollX, int oldScrollY) -> {
@@ -235,6 +236,16 @@ public class ReaderActivity extends AppCompatActivity {
                 .setItems(labels, (dialog, which) ->
                         loadChapterContent(chapterIds[which], chapterNumbers[which], chapterTitles[which]))
                 .show();
+    }
+
+    private void showComments() {
+        // đọc chapterId tại lúc bấm nên luôn là chương đang hiển thị; chặn mở 2 sheet khi bấm nhanh
+        if (chapterId <= 0
+                || getSupportFragmentManager().findFragmentByTag(CommentsBottomSheet.TAG) != null) {
+            return;
+        }
+        CommentsBottomSheet.newInstance(chapterId, currentChapterNumber)
+                .show(getSupportFragmentManager(), CommentsBottomSheet.TAG);
     }
 
     private void showCreateBookmarkDialog() {

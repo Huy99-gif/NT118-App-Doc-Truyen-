@@ -31,6 +31,18 @@
                 android:src="@drawable/ic_arrow_back"
                 app:tint="@color/text_primary" />
 
+            <!-- đặt trước tiêu đề để Toolbar chừa chỗ cho icon, tên truyện dài sẽ bị cắt thay vì đẩy mất icon -->
+            <ImageButton
+                android:id="@+id/btnComments"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="end"
+                android:layout_marginEnd="8dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Bình luận"
+                android:src="@drawable/ic_comment"
+                app:tint="@color/text_primary" />
+
             <TextView
                 android:id="@+id/tvToolbarTitle"
                 android:layout_width="wrap_content"
