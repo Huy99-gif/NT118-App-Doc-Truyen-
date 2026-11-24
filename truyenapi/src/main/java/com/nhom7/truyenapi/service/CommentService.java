@@ -63,4 +63,11 @@ public class CommentService {
                 .orElseThrow(() -> new ApiException(
                         HttpStatus.INTERNAL_SERVER_ERROR, "Không thể tải bình luận vừa tạo"));
     }
+
+    public void remove(Long commentId) {
+        Long userId = currentUserService.getCurrentUser().getId();
+        if (comments.deleteByIdAndUserId(commentId, userId) == 0) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy bình luận");
+        }
+    }
 }

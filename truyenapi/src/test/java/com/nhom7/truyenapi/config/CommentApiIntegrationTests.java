@@ -24,6 +24,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 
 import java.time.Instant;
@@ -31,6 +32,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -186,6 +188,44 @@ class CommentApiIntegrationTests {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items.length()").value(0))
                 .andExpect(jsonPath("$.totalElements").value(0));
+    }
+
+    @Test
+    void deleteRequiresAuthentication() throws Exception {
+        mockMvc.perform(delete("/comments/1"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void ownerCanDeleteOwnComment() throws Exception {
+        long commentId = createdId(postComment(authorizationA, chapter.getId(), "xoá tôi")
+                .andExpect(status().isCreated()).andReturn());
+
+        mockMvc.perform(delete("/comments/{id}", commentId).header(AUTH_HEADER, authorizationA))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(get("/chapters/{id}/comments", chapter.getId()).header(AUTH_HEADER, authorizationA))
+                .andExpect(jsonPath("$.totalElements").value(0));
+    }
+
+    @Test
+    void cannotDeleteOthersOrMissingComment() throws Exception {
+        long commentId = createdId(postComment(authorizationA, chapter.getId(), "của A")
+                .andExpect(status().isCreated()).andReturn());
+
+        mockMvc.perform(delete("/comments/{id}", commentId).header(AUTH_HEADER, authorizationB))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("Không tìm thấy bình luận"));
+        mockMvc.perform(get("/chapters/{id}/comments", chapter.getId()).header(AUTH_HEADER, authorizationA))
+                .andExpect(jsonPath("$.totalElements").value(1));
+        mockMvc.perform(delete("/comments/{id}", MISSING_ID).header(AUTH_HEADER, authorizationA))
+                .andExpect(status().isNotFound());
+    }
+
+    private long createdId(MvcResult result) throws Exception {
+        String body = result.getResponse().getContentAsString();
+        int start = body.indexOf("\"id\":") + 5;
+        int end = body.indexOf(',', start);
+        return Long.parseLong(body.substring(start, end));
     }
 
     private ResultActions postComment(String authorization, long chapterId, String content) throws Exception {
