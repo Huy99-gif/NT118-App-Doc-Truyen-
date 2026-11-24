@@ -1,12 +1,18 @@
 package com.example.android_app;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
 import com.example.android_app.databinding.ActivityLoginBinding;
 import com.example.android_app.model.LoginRequest;
@@ -21,14 +27,26 @@ import retrofit2.Response;
 
 public class LoginActivity extends AppCompatActivity {
 
+    // Android 17 (API 37) trở lên: kết nối tới địa chỉ mạng cục bộ (vd 10.0.2.2) cần quyền runtime
+    private static final int LOCAL_NETWORK_MIN_SDK = 37;
+
     private ActivityLoginBinding binding;
     private Call<LoginResponse> loginCall;
+
+    private final ActivityResultLauncher<String> localNetworkPermissionLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
+                if (!granted) {
+                    Toast.makeText(this, R.string.error_local_network_denied, Toast.LENGTH_LONG).show();
+                }
+            });
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         binding = ActivityLoginBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+
+        requestLocalNetworkPermissionIfNeeded();
 
         boolean sessionExpired = getIntent().getBooleanExtra(
                 SessionManager.EXTRA_SESSION_EXPIRED, false)
@@ -42,6 +60,15 @@ public class LoginActivity extends AppCompatActivity {
         }
 
         setupListeners();
+    }
+
+    private void requestLocalNetworkPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT < LOCAL_NETWORK_MIN_SDK) return;
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_LOCAL_NETWORK)
+                == PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        localNetworkPermissionLauncher.launch(Manifest.permission.ACCESS_LOCAL_NETWORK);
     }
 
     @Override
