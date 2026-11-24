@@ -1,6 +1,7 @@
 package com.example.android_app;
 
 import android.app.Dialog;
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -10,6 +11,9 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -42,6 +46,8 @@ public class CommentsBottomSheet extends BottomSheetDialogFragment {
     private int currentPage = -1;
     private int totalPages = 1;
     private boolean loadingPage;
+    // tải trang kế lỗi thì ngưng tự tải khi cuộn (tránh spam request + toast lúc mất mạng)
+    private boolean pageLoadFailed;
     private Call<PageResponse<CommentResponse>> listCall;
     private Call<CommentResponse> createCall;
     private Call<Void> deleteCall;
@@ -53,6 +59,11 @@ public class CommentsBottomSheet extends BottomSheetDialogFragment {
         CommentsBottomSheet sheet = new CommentsBottomSheet();
         sheet.setArguments(args);
         return sheet;
+    }
+
+    @Override
+    public int getTheme() {
+        return R.style.ThemeOverlay_TruyenApp_CommentsSheet;
     }
 
     @NonNull
@@ -89,13 +100,21 @@ public class CommentsBottomSheet extends BottomSheetDialogFragment {
             @Override
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
                 // gần cuối danh sách thì tải trang kế
-                if (dy > 0 && !loadingPage && currentPage + 1 < totalPages
+                if (dy > 0 && !loadingPage && !pageLoadFailed && currentPage + 1 < totalPages
                         && layoutManager.findLastVisibleItemPosition() >= adapter.getItemCount() - 3) {
                     loadPage(currentPage + 1);
                 }
             }
         });
         binding.btnSendComment.setOnClickListener(v -> sendComment());
+        // edge-to-edge: cửa sổ không co lại khi mở bàn phím, nên đẩy hàng nhập lên bằng padding
+        ViewCompat.setOnApplyWindowInsetsListener(binding.getRoot(), (root, insets) -> {
+            Insets ime = insets.getInsets(WindowInsetsCompat.Type.ime());
+            Insets navigation = insets.getInsets(WindowInsetsCompat.Type.navigationBars());
+            root.setPadding(root.getPaddingLeft(), root.getPaddingTop(), root.getPaddingRight(),
+                    Math.max(ime.bottom, navigation.bottom));
+            return insets;
+        });
         loadPage(0);
     }
 
@@ -107,7 +126,11 @@ public class CommentsBottomSheet extends BottomSheetDialogFragment {
         View sheet = dialog.findViewById(com.google.android.material.R.id.design_bottom_sheet);
         if (sheet != null) {
             ViewGroup.LayoutParams params = sheet.getLayoutParams();
-            params.height = (int) (getResources().getDisplayMetrics().heightPixels * SHEET_HEIGHT_RATIO);
+            // màn ngang thấp: dùng hết chiều cao để còn chỗ cho bàn phím + hàng nhập
+            boolean landscape = getResources().getConfiguration().orientation
+                    == Configuration.ORIENTATION_LANDSCAPE;
+            float ratio = landscape ? 1f : SHEET_HEIGHT_RATIO;
+            params.height = (int) (getResources().getDisplayMetrics().heightPixels * ratio);
             sheet.setLayoutParams(params);
         }
         BottomSheetBehavior<?> behavior = dialog.getBehavior();
@@ -138,6 +161,7 @@ public class CommentsBottomSheet extends BottomSheetDialogFragment {
                 loadingPage = false;
                 binding.progressComments.setVisibility(View.GONE);
                 if (!response.isSuccessful() || response.body() == null) {
+                    if (page > 0) pageLoadFailed = true;
                     toast(ApiErrorParser.getMessage(response, "Không tải được bình luận."));
                     return;
                 }
@@ -153,6 +177,7 @@ public class CommentsBottomSheet extends BottomSheetDialogFragment {
             public void onFailure(Call<PageResponse<CommentResponse>> call, Throwable throwable) {
                 if (!isAdded() || binding == null || call.isCanceled()) return;
                 loadingPage = false;
+                if (page > 0) pageLoadFailed = true;
                 binding.progressComments.setVisibility(View.GONE);
                 toast(getString(R.string.error_server_unreachable));
             }

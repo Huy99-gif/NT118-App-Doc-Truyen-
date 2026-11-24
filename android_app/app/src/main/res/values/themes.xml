@@ -48,4 +48,15 @@
     <style name="Widget.TruyenApp.BottomNavActiveIndicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
         <item name="android:color">@color/primary_light</item>
     </style>
+
+    <!-- bottom sheet bình luận: tự xử lý inset (bàn phím + thanh điều hướng) bằng padding ở root -->
+    <style name="ThemeOverlay.TruyenApp.CommentsSheet" parent="ThemeOverlay.Material3.BottomSheetDialog">
+        <item name="enableEdgeToEdge">true</item>
+        <item name="android:windowSoftInputMode">adjustResize</item>
+        <item name="bottomSheetStyle">@style/Widget.TruyenApp.CommentsSheet</item>
+    </style>
+
+    <style name="Widget.TruyenApp.CommentsSheet" parent="Widget.Material3.BottomSheet.Modal">
+        <item name="paddingBottomSystemWindowInsets">false</item>
+    </style>
 </resources>
