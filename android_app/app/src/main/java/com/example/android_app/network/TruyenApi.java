@@ -4,7 +4,9 @@ import com.example.android_app.model.AddLibraryRequest;
 import com.example.android_app.model.BookmarkResponse;
 import com.example.android_app.model.ChapterDetailResponse;
 import com.example.android_app.model.ChapterSummaryResponse;
+import com.example.android_app.model.CommentResponse;
 import com.example.android_app.model.CreateBookmarkRequest;
+import com.example.android_app.model.CreateCommentRequest;
 import com.example.android_app.model.LibraryItemResponse;
 import com.example.android_app.model.PageResponse;
 import com.example.android_app.model.ReadingHistoryResponse;
@@ -106,4 +108,22 @@ public interface TruyenApi extends AuthApi {
     Call<Void> deleteBookmark(
             @Header("Authorization") String authorization,
             @Path("id") long bookmarkId);
+
+    @GET("chapters/{id}/comments")
+    Call<PageResponse<CommentResponse>> getComments(
+            @Header("Authorization") String authorization,
+            @Path("id") long chapterId,
+            @Query("page") int page,
+            @Query("size") int size);
+
+    @POST("chapters/{id}/comments")
+    Call<CommentResponse> createComment(
+            @Header("Authorization") String authorization,
+            @Path("id") long chapterId,
+            @Body CreateCommentRequest request);
+
+    @DELETE("comments/{id}")
+    Call<Void> deleteComment(
+            @Header("Authorization") String authorization,
+            @Path("id") long commentId);
 }
