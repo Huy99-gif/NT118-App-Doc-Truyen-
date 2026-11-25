@@ -26,7 +26,7 @@
             android:textColor="@color/text_primary"
             android:textSize="14sp"
             android:textStyle="bold"
-            app:layout_constraintEnd_toStartOf="@id/ivChevron"
+            app:layout_constraintEnd_toStartOf="@id/btnDownload"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             tools:text="Chương 1: Cuộc gặp gỡ định mệnh" />
@@ -39,16 +39,18 @@
             android:textColor="@color/text_secondary"
             android:textSize="12sp"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/ivChevron"
+            app:layout_constraintEnd_toStartOf="@id/btnDownload"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tvChapterTitle"
             tools:text="Cập nhật: 12/10/2024  •  1.2k lượt đọc" />
 
-        <ImageView
-            android:id="@+id/ivChevron"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:src="@drawable/ic_chevron_right"
+        <ImageButton
+            android:id="@+id/btnDownload"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Tải chương"
+            android:src="@drawable/ic_download"
             app:tint="@color/primary"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"

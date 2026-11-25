@@ -81,4 +81,14 @@
     <string name="chapter_count">%d chương</string>
     <string name="recently_reading">Đang đọc</string>
 
+    <!-- Đọc offline -->
+    <string name="offline_need_owner">Kết nối mạng một lần để bật tải offline</string>
+    <string name="offline_chapter_not_downloaded">Chương này chưa được tải. Cần kết nối mạng để đọc.</string>
+    <string name="offline_comments_need_network">Cần kết nối mạng để xem bình luận</string>
+    <string name="offline_bookmark_queued">Đã lưu dấu trang, sẽ đồng bộ khi có mạng</string>
+    <string name="offline_no_network">Không có kết nối mạng</string>
+    <string name="offline_open_downloads">Xem truyện đã tải</string>
+    <string name="offline_read_downloaded">Đọc truyện đã tải</string>
+    <string name="offline_pending_sync">Chờ đồng bộ</string>
+    <string name="offline_mode">Đang offline</string>
 </resources>

@@ -160,6 +160,19 @@
                     app:iconTint="@color/primary" />
             </LinearLayout>
 
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnDownloadAll"
+                style="@style/Widget.TruyenApp.Button.Outlined"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="8dp"
+                android:enabled="false"
+                android:text="Tải cả truyện"
+                app:icon="@drawable/ic_download"
+                app:iconGravity="textStart"
+                app:iconTint="@color/primary" />
+
             <!-- Giới Thiệu Nội Dung -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"

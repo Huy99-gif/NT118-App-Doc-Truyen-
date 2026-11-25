@@ -7,6 +7,8 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.work.WorkInfo;
+import androidx.work.WorkManager;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
@@ -19,10 +21,21 @@ import com.example.android_app.model.LibraryItemResponse;
 import com.example.android_app.model.PageResponse;
 import com.example.android_app.model.StoryDetailResponse;
 import com.example.android_app.network.ApiClient;
+import com.example.android_app.offline.OfflineExecutors;
+import com.example.android_app.offline.db.ChapterHeader;
+import com.example.android_app.offline.db.DownloadedStoryEntity;
+import com.example.android_app.offline.db.OfflineDatabase;
+import com.example.android_app.offline.work.OfflineWork;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.example.android_app.util.ApiErrorParser;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -38,6 +51,10 @@ public class StoryDetailActivity extends AppCompatActivity {
     private String storyCover;
     private int chapterCount;
     private boolean isSaved;
+    private String ownerKey;
+    private boolean storyDownloadRunning;
+    private final Set<Long> downloadedIds = new HashSet<>();
+    private final Set<Long> queuedIds = new HashSet<>();
     private Call<StoryDetailResponse> detailCall;
     private Call<PageResponse<ChapterSummaryResponse>> chaptersCall;
     private Call<PageResponse<LibraryItemResponse>> libraryCall;
@@ -49,8 +66,10 @@ public class StoryDetailActivity extends AppCompatActivity {
         binding = ActivityStoryDetailBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
         getIntentData();
+        ownerKey = AuthPreferences.getOwnerKey(this);
         setupUI();
         setupListeners();
+        observeDownloads();
         loadStoryDetail();
         loadChapters();
         loadLibraryStatus();
@@ -97,9 +116,171 @@ public class StoryDetailActivity extends AppCompatActivity {
                 .into(binding.ivCover);
 
         chapterAdapter = new ChapterAdapter(chapter -> openReader(Long.parseLong(chapter.getId())));
+        chapterAdapter.setOnDownloadClickListener(this::onDownloadClick);
+        chapterAdapter.setDownloadEnabled(ownerKey != null);
         binding.rvChapters.setLayoutManager(new LinearLayoutManager(this));
         binding.rvChapters.setAdapter(chapterAdapter);
         binding.btnReadFirst.setEnabled(false);
+    }
+
+    private void observeDownloads() {
+        if (ownerKey == null || storyId <= 0) return;
+        OfflineDatabase.get(this).dao().observeChapterHeaders(ownerKey, storyId)
+                .observe(this, headers -> {
+                    downloadedIds.clear();
+                    for (ChapterHeader header : headers) downloadedIds.add(header.chapterId);
+                    refreshDownloadStates();
+                });
+        WorkManager workManager = WorkManager.getInstance(this);
+        workManager.getWorkInfosByTagLiveData(OfflineWork.storyTag(ownerKey, storyId))
+                .observe(this, infos -> {
+                    queuedIds.clear();
+                    for (WorkInfo info : infos) {
+                        if (info.getState().isFinished()) continue;
+                        for (String tag : info.getTags()) {
+                            if (tag.startsWith("chapter-")) {
+                                try {
+                                    queuedIds.add(Long.parseLong(tag.substring("chapter-".length())));
+                                } catch (NumberFormatException ignored) {}
+                            }
+                        }
+                    }
+                    refreshDownloadStates();
+                });
+        workManager.getWorkInfosForUniqueWorkLiveData(OfflineWork.storyWorkName(ownerKey, storyId))
+                .observe(this, this::updateDownloadAllButton);
+    }
+
+    private void refreshDownloadStates() {
+        Map<Long, ChapterAdapter.DownloadState> states = new HashMap<>();
+        for (Long id : queuedIds) states.put(id, ChapterAdapter.DownloadState.QUEUED);
+        for (Long id : downloadedIds) states.put(id, ChapterAdapter.DownloadState.DONE);
+        chapterAdapter.setDownloadStates(states);
+    }
+
+    private void updateDownloadAllButton(List<WorkInfo> infos) {
+        storyDownloadRunning = false;
+        for (WorkInfo info : infos) {
+            if (info.getState().isFinished()) continue;
+            storyDownloadRunning = true;
+            int done = info.getProgress().getInt(OfflineWork.PROGRESS_DONE, 0);
+            int total = info.getProgress().getInt(OfflineWork.PROGRESS_TOTAL, chapterCount);
+            binding.btnDownloadAll.setText("Huỷ tải (" + done + "/" + total + ")");
+        }
+        if (!storyDownloadRunning) binding.btnDownloadAll.setText("Tải cả truyện");
+    }
+
+    private void onDownloadClick(Chapter chapter, ChapterAdapter.DownloadState state) {
+        if (ownerKey == null) {
+            Toast.makeText(this, R.string.offline_need_owner, Toast.LENGTH_LONG).show();
+            return;
+        }
+        long chapterId = Long.parseLong(chapter.getId());
+        if (state == ChapterAdapter.DownloadState.NONE) {
+            OfflineWork.enqueueChapterDownload(this, ownerKey, storyMeta(), chapterId);
+        } else if (state == ChapterAdapter.DownloadState.DONE) {
+            new MaterialAlertDialogBuilder(this)
+                    .setTitle("Xoá chương đã tải?")
+                    .setMessage("Chương " + chapter.getChapterNumber() + " sẽ bị xoá khỏi máy.")
+                    .setNegativeButton("Hủy", null)
+                    .setPositiveButton("Xoá", (dialog, which) -> {
+                        String owner = ownerKey;
+                        long story = storyId;
+                        OfflineExecutors.io().execute(() -> OfflineDatabase.get(this).dao()
+                                .deleteChapter(owner, story, chapterId));
+                    })
+                    .show();
+        }
+    }
+
+    private void onDownloadAllClick() {
+        if (ownerKey == null) {
+            Toast.makeText(this, R.string.offline_need_owner, Toast.LENGTH_LONG).show();
+            return;
+        }
+        if (storyDownloadRunning) {
+            OfflineWork.cancelStoryDownload(this, ownerKey, storyId);
+            return;
+        }
+        new MaterialAlertDialogBuilder(this)
+                .setTitle("Tải cả truyện")
+                .setMessage("Tải " + chapterCount + " chương để đọc khi không có mạng?")
+                .setNegativeButton("Hủy", null)
+                .setPositiveButton("Tải", (dialog, which) ->
+                        OfflineWork.enqueueStoryDownload(this, ownerKey, storyMeta()))
+                .show();
+    }
+
+    private DownloadedStoryEntity storyMeta() {
+        DownloadedStoryEntity story = new DownloadedStoryEntity();
+        story.ownerKey = ownerKey;
+        story.storyId = storyId;
+        story.title = storyName;
+        story.authorName = storyAuthor;
+        story.coverUrl = storyCover;
+        story.totalChapters = chapterCount;
+        return story;
+    }
+
+    // mất mạng: nếu truyện đã tải thì hiện thông tin lưu trong máy
+    private void loadStoryFromDevice() {
+        if (ownerKey == null) return;
+        String owner = ownerKey;
+        long id = storyId;
+        OfflineExecutors.io().execute(() -> {
+            DownloadedStoryEntity story = OfflineDatabase.get(this).dao().findStory(owner, id);
+            OfflineExecutors.main(() -> {
+                if (story == null || isFinishing() || isDestroyed()) return;
+                storyName = story.title;
+                storyAuthor = story.authorName;
+                storyCover = story.coverUrl;
+                binding.tvStoryName.setText(valueOrDefault(story.title, "Truyện đã tải"));
+                binding.tvAuthor.setText("Tác giả: " + valueOrDefault(story.authorName, "Đang cập nhật"));
+                binding.tvStatus.setText("Trạng thái: Đang offline");
+                binding.tvCategory.setText("Thể loại: Không có kết nối mạng");
+                binding.tvDescription.setText("Đang xem bản đã tải về máy.");
+                Glide.with(StoryDetailActivity.this)
+                        .load(story.coverUrl)
+                        .apply(new RequestOptions()
+                                .placeholder(R.drawable.ic_launcher_foreground)
+                                .error(R.drawable.ic_launcher_foreground))
+                        .into(binding.ivCover);
+            });
+        });
+    }
+
+    private void loadChaptersFromDevice() {
+        if (ownerKey == null) {
+            Toast.makeText(this, R.string.error_server_unreachable, Toast.LENGTH_LONG).show();
+            return;
+        }
+        String owner = ownerKey;
+        long id = storyId;
+        OfflineExecutors.io().execute(() -> {
+            List<ChapterHeader> headers = OfflineDatabase.get(this).dao().chapterHeaders(owner, id);
+            OfflineExecutors.main(() -> {
+                if (isFinishing() || isDestroyed()) return;
+                if (headers.isEmpty()) {
+                    Toast.makeText(this, R.string.error_server_unreachable, Toast.LENGTH_LONG).show();
+                    return;
+                }
+                chapters.clear();
+                List<Chapter> adapterItems = new ArrayList<>();
+                for (ChapterHeader header : headers) {
+                    ChapterSummaryResponse item = new ChapterSummaryResponse();
+                    item.id = header.chapterId;
+                    item.chapterNo = header.chapterNo;
+                    item.title = header.title;
+                    item.updatedAt = header.updatedAt;
+                    chapters.add(item);
+                    adapterItems.add(new Chapter(String.valueOf(header.chapterId), header.chapterNo,
+                            header.title, header.updatedAt, 0));
+                }
+                chapterAdapter.setChapters(adapterItems);
+                binding.tvChapterHeader.setText("Chương đã tải (" + headers.size() + " chương)");
+                binding.btnReadFirst.setEnabled(true);
+            });
+        });
     }
 
     private void setupListeners() {
@@ -111,6 +292,7 @@ public class StoryDetailActivity extends AppCompatActivity {
             }
         });
         binding.btnBookmark.setOnClickListener(v -> changeLibraryMembership());
+        binding.btnDownloadAll.setOnClickListener(v -> onDownloadAllClick());
     }
 
     private void loadStoryDetail() {
@@ -149,7 +331,10 @@ public class StoryDetailActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<StoryDetailResponse> call, Throwable throwable) {
-                if (!isFinishing() && !isDestroyed() && !call.isCanceled()) {
+                if (isFinishing() || isDestroyed() || call.isCanceled()) return;
+                if (throwable instanceof IOException) {
+                    loadStoryFromDevice();
+                } else {
                     Toast.makeText(StoryDetailActivity.this,
                             R.string.error_server_unreachable, Toast.LENGTH_LONG).show();
                 }
@@ -185,6 +370,7 @@ public class StoryDetailActivity extends AppCompatActivity {
                 chapterAdapter.setChapters(adapterItems);
                 binding.tvChapterHeader.setText("Danh sách chương (" + chapterCount + " chương)");
                 binding.btnReadFirst.setEnabled(!chapters.isEmpty());
+                binding.btnDownloadAll.setEnabled(!chapters.isEmpty());
                 if (chapters.isEmpty()) {
                     Toast.makeText(StoryDetailActivity.this,
                             "Truyện chưa có chương.", Toast.LENGTH_SHORT).show();
@@ -195,8 +381,12 @@ public class StoryDetailActivity extends AppCompatActivity {
             public void onFailure(Call<PageResponse<ChapterSummaryResponse>> call, Throwable throwable) {
                 if (isFinishing() || isDestroyed() || call.isCanceled()) return;
                 binding.progressBarChapters.setVisibility(View.GONE);
-                Toast.makeText(StoryDetailActivity.this,
-                        R.string.error_server_unreachable, Toast.LENGTH_LONG).show();
+                if (throwable instanceof IOException) {
+                    loadChaptersFromDevice();
+                } else {
+                    Toast.makeText(StoryDetailActivity.this,
+                            R.string.error_server_unreachable, Toast.LENGTH_LONG).show();
+                }
             }
         });
     }
