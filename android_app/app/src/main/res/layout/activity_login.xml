@@ -202,6 +202,22 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />
 
+        <!-- Đọc truyện đã tải khi không còn phiên đăng nhập (hiện khi tài khoản gần nhất có chương đã tải) -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnReadDownloaded"
+            style="@style/Widget.TruyenApp.Button.Outlined"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="@string/offline_read_downloaded"
+            android:visibility="gone"
+            app:icon="@drawable/ic_download"
+            app:iconGravity="textStart"
+            app:iconTint="@color/text_primary"
+            app:layout_constraintTop_toBottomOf="@id/btnGuestLogin"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
         <!-- Chưa có tài khoản? Đăng ký ngay -->
         <LinearLayout
             android:id="@+id/layoutRegister"
@@ -210,7 +226,7 @@
             android:layout_marginTop="32dp"
             android:layout_marginBottom="16dp"
             android:orientation="horizontal"
-            app:layout_constraintTop_toBottomOf="@id/btnGuestLogin"
+            app:layout_constraintTop_toBottomOf="@id/btnReadDownloaded"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent">

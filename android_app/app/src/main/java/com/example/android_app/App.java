@@ -21,6 +21,7 @@ public final class App extends Application {
             @Override
             public void onActivityResumed(Activity activity) {
                 if (activity instanceof LoginActivity
+                        || isOfflineReading(activity)
                         || !AuthPreferences.isSessionExpired(App.this)
                         || AuthPreferences.getToken(App.this) != null) {
                     return;
@@ -51,6 +52,13 @@ public final class App extends Application {
             @Override
             public void onActivityDestroyed(Activity activity) {}
         });
+    }
+
+    // đọc truyện đã tải khi không còn phiên: không đẩy về màn đăng nhập
+    private static boolean isOfflineReading(Activity activity) {
+        if (activity instanceof OfflineLibraryActivity) return true;
+        return activity instanceof ReaderActivity
+                && activity.getIntent().getBooleanExtra(ReaderActivity.EXTRA_OFFLINE_MODE, false);
     }
 
     // còn vị trí đọc / dấu trang chờ gửi từ lần offline trước thì đặt lịch đồng bộ

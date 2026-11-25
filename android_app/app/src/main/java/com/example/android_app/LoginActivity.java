@@ -19,6 +19,8 @@ import com.example.android_app.model.LoginRequest;
 import com.example.android_app.model.LoginResponse;
 import com.example.android_app.network.ApiClient;
 import com.example.android_app.network.SessionManager;
+import com.example.android_app.offline.OfflineExecutors;
+import com.example.android_app.offline.db.OfflineDatabase;
 import com.example.android_app.offline.work.OfflineWork;
 import com.example.android_app.util.ApiErrorParser;
 
@@ -69,6 +71,22 @@ public class LoginActivity extends AppCompatActivity {
         }
 
         setupListeners();
+        showReadDownloadedIfAny();
+    }
+
+    // tài khoản gần nhất còn chương đã tải thì cho vào đọc mà không cần đăng nhập
+    private void showReadDownloadedIfAny() {
+        String owner = AuthPreferences.getOwnerKey(this);
+        if (owner == null) return;
+        OfflineExecutors.io().execute(() -> {
+            boolean hasDownloads = OfflineDatabase.get(this).dao().countChapters(owner) > 0;
+            OfflineExecutors.main(() -> {
+                if (isFinishing() || isDestroyed() || !hasDownloads) return;
+                binding.btnReadDownloaded.setVisibility(View.VISIBLE);
+                binding.btnReadDownloaded.setOnClickListener(v ->
+                        startActivity(new Intent(this, OfflineLibraryActivity.class)));
+            });
+        });
     }
 
     private void requestLocalNetworkPermissionIfNeeded() {
