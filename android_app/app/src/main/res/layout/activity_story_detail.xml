@@ -186,6 +186,7 @@
                 android:layout_gravity="center_horizontal"
                 android:contentDescription="Đánh giá của bạn"
                 android:numStars="5"
+                android:progressTint="#FFC107"
                 android:stepSize="1" />
 
             <Button
