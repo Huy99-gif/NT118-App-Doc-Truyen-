@@ -172,3 +172,14 @@ Worker gửi lần lượt từng dòng `pending_progress`, rồi từng dòng `
 - Icon và layout của trạng thái tải trên `item_chapter.xml`.
 - Cách ước lượng dung lượng trong hộp thoại "Tải cả truyện" (có thể chỉ hiện số chương).
 - Tổ chức package (ví dụ `offline/` gồm db, dao, worker, repository).
+
+## 9. Ghi chú sau triển khai
+
+Những điểm khi làm đã quyết định thêm hoặc khác so với thiết kế ban đầu:
+
+- **Mã 4xx khác (403, 422…) khi đồng bộ** được xử lý như 404: bỏ bản ghi và báo lỗi, không thử lại mãi.
+- **Đăng nhập thành công** sẽ đặt lịch `SyncWorker` ngay, để dữ liệu chờ gửi lúc offline không phải đợi tới lần mở app sau.
+- **Lưu vị trí đọc thất bại vì bất kỳ lý do gì** (mất mạng hoặc HTTP không 2xx) đều đặt lịch đồng bộ. `SyncWorker` sẽ tự phân loại lỗi.
+- **Nút tải khi chưa có `ownerKey`** hiện mờ nhưng vẫn bấm được, để hiện thông báo "Kết nối mạng một lần để bật tải offline".
+- **Cấp 2 của tab "Đã tải"** hiển thị ngay trong `DownloadsFragment`, có thanh tiêu đề và nút quay lại; nút Back của hệ thống cũng quay về danh sách truyện.
+- **Lưu ý về backend:** `app.jwt.expiration-ms=200000` (~3,3 phút), nên token hết hạn rất nhanh. Vì vậy luồng "đọc truyện đã tải khi không còn phiên" (5.2) sẽ là đường dùng chính khi offline.
