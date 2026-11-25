@@ -171,6 +171,30 @@
                 app:icon="@drawable/ic_comment"
                 app:iconGravity="textStart" />
 
+            <TextView
+                android:id="@+id/ratingSummary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:layout_marginTop="12dp"
+                android:text="Đánh giá tác phẩm" />
+
+            <RatingBar
+                android:id="@+id/myRating"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:contentDescription="Đánh giá của bạn"
+                android:numStars="5"
+                android:stepSize="1" />
+
+            <Button
+                android:id="@+id/saveRating"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:text="Lưu đánh giá" />
+
             <!-- Giới Thiệu Nội Dung -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"

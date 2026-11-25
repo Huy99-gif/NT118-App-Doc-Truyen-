@@ -95,6 +95,7 @@ class CommentApiIntegrationTests {
     // H2 dùng chung giữa các class test: dọn bình luận để test khác xoá user/chương không dính khoá ngoại
     @AfterEach
     void tearDown() {
+        ratings.deleteAll();
         comments.deleteAll();
     }
 
@@ -141,6 +142,24 @@ class CommentApiIntegrationTests {
         mockMvc.perform(get("/chapters/{id}/comments", chapter.getId()).header(AUTH_HEADER, authorizationA))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.items.length()").value(1))
                 .andExpect(jsonPath("$.items[0].content").value("chapter"));
+    }
+
+    @Test
+    void ratingUpdatesOneVotePerReader() throws Exception {
+        String route = "/stories/{id}/rating";
+        String[] accounts = {authorizationA, authorizationB, authorizationA};
+        int[] votes = {5, 3, 4};
+        double[] averages = {5, 4, 3.5};
+        for (int i = 0; i < votes.length; i++) {
+            mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put(route, story.getId())
+                            .header(AUTH_HEADER, accounts[i]).contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"stars\":" + votes[i] + "}"))
+                    .andExpect(status().isOk()).andExpect(jsonPath("$.averageStars").value(averages[i]))
+                    .andExpect(jsonPath("$.ratingCount").value(Math.min(i + 1, 2)))
+                    .andExpect(jsonPath("$.myStars").value(votes[i]));
+        }
+        mockMvc.perform(get(route, story.getId()).header(AUTH_HEADER, authorizationB))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.myStars").value(3));
     }
 
     @Test

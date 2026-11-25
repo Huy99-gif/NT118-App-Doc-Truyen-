@@ -17,6 +17,7 @@ import com.example.android_app.model.Chapter;
 import com.example.android_app.model.ChapterSummaryResponse;
 import com.example.android_app.model.LibraryItemResponse;
 import com.example.android_app.model.PageResponse;
+import com.example.android_app.model.RatingSummary;
 import com.example.android_app.model.StoryDetailResponse;
 import com.example.android_app.network.ApiClient;
 import com.example.android_app.util.ApiErrorParser;
@@ -32,6 +33,7 @@ public class StoryDetailActivity extends AppCompatActivity {
     private ActivityStoryDetailBinding binding;
     private ChapterAdapter chapterAdapter;
     private final List<ChapterSummaryResponse> chapters = new ArrayList<>();
+    private Call<RatingSummary> ratingCall;
     private long storyId;
     private String storyName;
     private String storyAuthor;
@@ -51,6 +53,12 @@ public class StoryDetailActivity extends AppCompatActivity {
         getIntentData();
         setupUI();
         setupListeners();
+        binding.saveRating.setOnClickListener(v -> {
+            int stars = (int) binding.myRating.getRating();
+            if (stars > 0) requestRating(stars);
+            else Toast.makeText(this, "Hãy chọn số sao trước khi lưu", Toast.LENGTH_SHORT).show();
+        });
+        requestRating(0);
         loadStoryDetail();
         loadChapters();
         loadLibraryStatus();
@@ -58,11 +66,51 @@ public class StoryDetailActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
+        cancel(ratingCall);
         cancel(detailCall);
         cancel(chaptersCall);
         cancel(libraryCall);
         cancel(libraryMutationCall);
         super.onDestroy();
+    }
+
+    private void requestRating(int stars) {
+        String auth = ApiClient.authorization(this);
+        binding.saveRating.setEnabled(false);
+        binding.myRating.setEnabled(false);
+        if (auth == null || storyId <= 0) return;
+        ratingCall = stars == 0 ? ApiClient.api().getRating(auth, storyId)
+                : ApiClient.api().saveRating(auth, storyId, java.util.Collections.singletonMap("stars", stars));
+        ratingCall.enqueue(new Callback<RatingSummary>() {
+            @Override
+            public void onResponse(Call<RatingSummary> call, Response<RatingSummary> response) {
+                if (call.isCanceled()) return;
+                binding.myRating.setEnabled(true);
+                binding.saveRating.setEnabled(true);
+                RatingSummary summary = response.body();
+                if (!response.isSuccessful() || summary == null) {
+                    showRatingError();
+                    return;
+                }
+                binding.ratingSummary.setText(summary.ratingCount == 0 ? "Chưa có đánh giá"
+                        : String.format(java.util.Locale.getDefault(), "%.1f/5 · %d lượt đánh giá",
+                                summary.averageStars, summary.ratingCount));
+                binding.myRating.setRating(summary.myStars == null ? 0 : summary.myStars);
+                if (stars > 0) Toast.makeText(StoryDetailActivity.this, "Đã lưu đánh giá", Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onFailure(Call<RatingSummary> call, Throwable error) {
+                if (call.isCanceled()) return;
+                binding.myRating.setEnabled(true);
+                binding.saveRating.setEnabled(true);
+                showRatingError();
+            }
+        });
+    }
+
+    private void showRatingError() {
+        binding.ratingSummary.setText("Không thể cập nhật đánh giá. Kiểm tra kết nối mạng.");
     }
 
     private void getIntentData() {

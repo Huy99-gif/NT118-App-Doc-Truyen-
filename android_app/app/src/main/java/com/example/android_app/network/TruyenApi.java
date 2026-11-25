@@ -9,6 +9,7 @@ import com.example.android_app.model.CreateBookmarkRequest;
 import com.example.android_app.model.CreateCommentRequest;
 import com.example.android_app.model.LibraryItemResponse;
 import com.example.android_app.model.PageResponse;
+import com.example.android_app.model.RatingSummary;
 import com.example.android_app.model.ReadingHistoryResponse;
 import com.example.android_app.model.StoryDetailResponse;
 import com.example.android_app.model.StorySummaryResponse;
@@ -27,6 +28,13 @@ import retrofit2.http.Path;
 import retrofit2.http.Query;
 
 public interface TruyenApi extends AuthApi {
+    @GET("stories/{id}/rating")
+    Call<RatingSummary> getRating(@Header("Authorization") String auth, @Path("id") long id);
+
+    @PUT("stories/{id}/rating")
+    Call<RatingSummary> saveRating(@Header("Authorization") String auth, @Path("id") long id,
+                                   @Body java.util.Map<String, Integer> vote);
+
     @GET("stories")
     Call<PageResponse<StorySummaryResponse>> getStories(
             @Header("Authorization") String authorization,

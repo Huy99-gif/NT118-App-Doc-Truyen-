@@ -12,6 +12,10 @@ import org.springframework.data.repository.query.Param;
 import java.util.Optional;
 
 public interface StoryRepository extends JpaRepository<Story, Long> {
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select s from Story s where s.id = :id")
+    Optional<Story> lockForRating(@Param("id") Long id);
+
     // fetch join author vs categories luôn để đỡ dính lỗi n+1 query
     @EntityGraph(attributePaths = {"author", "categories"})
     @Query("select s from Story s where s.id = :id")
