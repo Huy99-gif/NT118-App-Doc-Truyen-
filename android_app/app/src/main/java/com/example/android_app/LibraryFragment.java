@@ -1,5 +1,6 @@
 package com.example.android_app;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -21,12 +22,18 @@ import com.example.android_app.model.PageResponse;
 import com.example.android_app.model.ReadingHistoryResponse;
 import com.example.android_app.model.Story;
 import com.example.android_app.network.ApiClient;
+import com.example.android_app.offline.OfflineExecutors;
+import com.example.android_app.offline.SyncErrorStore;
+import com.example.android_app.offline.db.OfflineDatabase;
+import com.example.android_app.offline.db.PendingBookmarkEntity;
 import com.example.android_app.util.ApiErrorParser;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.tabs.TabLayout;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -226,6 +233,8 @@ public class LibraryFragment extends Fragment {
     }
 
     private void loadBookmarks() {
+        showSyncErrors();
+        String owner = AuthPreferences.getOwnerKey(requireContext());
         String authorization = ApiClient.authorization(requireContext());
         if (authorization == null) {
             showEmpty("Vui lòng đăng nhập để xem dấu trang.");
@@ -245,14 +254,34 @@ public class LibraryFragment extends Fragment {
                     showError(response, "Không tải được dấu trang.");
                     return;
                 }
-                binding.rvLibrary.setAdapter(bookmarkAdapter);
-                bookmarkAdapter.setBookmarks(response.body().items);
-                showResults(response.body().items.isEmpty(), "Chưa có dấu trang nào.");
+                List<BookmarkResponse> serverItems = response.body().items;
+                loadPendingBookmarks(owner, pending -> {
+                    List<BookmarkResponse> merged = new ArrayList<>(pending);
+                    merged.addAll(serverItems);
+                    binding.rvLibrary.setAdapter(bookmarkAdapter);
+                    bookmarkAdapter.setBookmarks(merged);
+                    showResults(merged.isEmpty(), "Chưa có dấu trang nào.");
+                });
             }
 
             @Override
             public void onFailure(Call<PageResponse<BookmarkResponse>> call, Throwable throwable) {
-                if (isViewActive() && !call.isCanceled()) showFailure("Không tải được dấu trang.");
+                if (!isViewActive() || call.isCanceled()) return;
+                if (!(throwable instanceof IOException)) {
+                    showFailure("Không tải được dấu trang.");
+                    return;
+                }
+                // offline: chỉ hiện các dấu trang đang chờ đồng bộ
+                loadPendingBookmarks(owner, pending -> {
+                    binding.rvLibrary.setAdapter(bookmarkAdapter);
+                    bookmarkAdapter.setBookmarks(pending);
+                    if (pending.isEmpty()) {
+                        showEmpty(getString(R.string.offline_mode) + ": không tải được dấu trang.");
+                    } else {
+                        Toast.makeText(requireContext(), R.string.offline_mode, Toast.LENGTH_SHORT).show();
+                        showResults(false, "");
+                    }
+                });
             }
         });
     }
@@ -320,6 +349,39 @@ public class LibraryFragment extends Fragment {
 
     private void showFailure(String message) {
         showEmpty(message);
+    }
+
+    /** Đọc dấu trang chờ gửi trong Room rồi trả kết quả trên main thread (chỉ khi view còn sống). */
+    private void loadPendingBookmarks(String owner, Consumer<List<BookmarkResponse>> onLoaded) {
+        if (owner == null) {
+            onLoaded.accept(new ArrayList<>());
+            return;
+        }
+        Context context = requireContext().getApplicationContext();
+        OfflineExecutors.io().execute(() -> {
+            List<BookmarkResponse> result = new ArrayList<>();
+            for (PendingBookmarkEntity entity : OfflineDatabase.get(context).dao().pendingBookmarks(owner)) {
+                BookmarkResponse bookmark = new BookmarkResponse();
+                bookmark.storyId = entity.storyId;
+                bookmark.storyTitle = entity.storyTitle;
+                bookmark.chapterId = entity.chapterId;
+                bookmark.chapterNo = entity.chapterNo;
+                bookmark.chapterTitle = entity.chapterTitle;
+                bookmark.charOffset = entity.charOffset;
+                bookmark.note = entity.note;
+                bookmark.pending = true;
+                bookmark.localId = entity.localId;
+                result.add(bookmark);
+            }
+            OfflineExecutors.main(() -> {
+                if (isViewActive()) onLoaded.accept(result);
+            });
+        });
+    }
+
+    private void showSyncErrors() {
+        String errors = SyncErrorStore.consume(requireContext());
+        if (errors != null) Toast.makeText(requireContext(), errors, Toast.LENGTH_LONG).show();
     }
 
     private boolean isViewActive() {

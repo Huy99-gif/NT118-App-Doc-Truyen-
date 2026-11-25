@@ -71,9 +71,14 @@ public class BookmarkAdapter extends RecyclerView.Adapter<BookmarkAdapter.Bookma
             String chapter = "Chương " + (bookmark.chapterNo == null ? "?" : bookmark.chapterNo)
                     + (bookmark.chapterTitle == null ? "" : ": " + bookmark.chapterTitle);
             details.setText(chapter);
-            note.setText(bookmark.note == null || bookmark.note.trim().isEmpty()
+            String noteText = bookmark.note == null || bookmark.note.trim().isEmpty()
                     ? "Vị trí: " + (bookmark.charOffset == null ? 0 : bookmark.charOffset)
-                    : bookmark.note);
+                    : bookmark.note;
+            if (bookmark.pending) {
+                noteText = noteText + " · " + itemView.getContext().getString(R.string.offline_pending_sync);
+            }
+            note.setText(noteText);
+            delete.setVisibility(bookmark.pending ? View.GONE : View.VISIBLE);
             itemView.setOnClickListener(v -> {
                 if (listener != null) listener.onBookmarkClick(bookmark);
             });

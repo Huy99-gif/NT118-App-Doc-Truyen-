@@ -10,4 +10,7 @@ public class BookmarkResponse {
     public String chapterTitle;
     public Integer charOffset;
     public String note;
+    /** Dấu trang tạo lúc offline, đang chờ gửi lên server (không đến từ API). */
+    public transient boolean pending;
+    public transient long localId;
 }

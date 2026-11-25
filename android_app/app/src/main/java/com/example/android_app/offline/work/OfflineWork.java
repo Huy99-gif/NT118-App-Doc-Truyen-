@@ -83,7 +83,14 @@ public final class OfflineWork {
     }
 
     public static void enqueueSync(Context context, String owner) {
-        // Task 6
+        if (owner == null) return;
+        OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(SyncWorker.class)
+                .setInputData(new Data.Builder().putString(KEY_OWNER, owner).build())
+                .setConstraints(networkConstraint())
+                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, BACKOFF_SECONDS, TimeUnit.SECONDS)
+                .build();
+        WorkManager.getInstance(context).enqueueUniqueWork(
+                syncWorkName(owner), ExistingWorkPolicy.KEEP, request);
     }
 
     static DownloadedStoryEntity storyFrom(Data input, long now) {

@@ -7,12 +7,16 @@ import android.os.Bundle;
 
 import com.example.android_app.network.ApiClient;
 import com.example.android_app.network.SessionManager;
+import com.example.android_app.offline.OfflineExecutors;
+import com.example.android_app.offline.db.OfflineDatabase;
+import com.example.android_app.offline.work.OfflineWork;
 
 public final class App extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
         ApiClient.initialize(this);
+        syncPendingIfAny();
         registerActivityLifecycleCallbacks(new ActivityLifecycleCallbacks() {
             @Override
             public void onActivityResumed(Activity activity) {
@@ -46,6 +50,17 @@ public final class App extends Application {
 
             @Override
             public void onActivityDestroyed(Activity activity) {}
+        });
+    }
+
+    // còn vị trí đọc / dấu trang chờ gửi từ lần offline trước thì đặt lịch đồng bộ
+    private void syncPendingIfAny() {
+        String owner = AuthPreferences.getOwnerKey(this);
+        if (owner == null || AuthPreferences.getToken(this) == null) return;
+        OfflineExecutors.io().execute(() -> {
+            if (OfflineDatabase.get(this).dao().countPending(owner) > 0) {
+                OfflineWork.enqueueSync(this, owner);
+            }
         });
     }
 }
