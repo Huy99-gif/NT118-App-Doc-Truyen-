@@ -19,6 +19,7 @@ import com.example.android_app.model.LoginRequest;
 import com.example.android_app.model.LoginResponse;
 import com.example.android_app.network.ApiClient;
 import com.example.android_app.network.SessionManager;
+import com.example.android_app.offline.work.OfflineWork;
 import com.example.android_app.util.ApiErrorParser;
 
 import retrofit2.Call;
@@ -146,6 +147,9 @@ public class LoginActivity extends AppCompatActivity {
 
                 ApiClient.onLoginSuccess(loginResponse.getToken());
                 AuthPreferences.saveOwnerKey(LoginActivity.this, loginResponse.getEmail());
+                // gửi dấu trang / vị trí đọc tạo lúc offline của tài khoản này
+                OfflineWork.enqueueSync(getApplicationContext(),
+                        AuthPreferences.getOwnerKey(LoginActivity.this));
                 Toast.makeText(LoginActivity.this, R.string.toast_login_success, Toast.LENGTH_SHORT).show();
                 startActivity(new Intent(LoginActivity.this, MainActivity.class));
                 finish();
