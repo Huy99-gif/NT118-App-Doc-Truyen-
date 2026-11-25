@@ -160,6 +160,17 @@
                     app:iconTint="@color/primary" />
             </LinearLayout>
 
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnStoryComments"
+                style="@style/Widget.TruyenApp.Button.Outlined"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="8dp"
+                android:text="@string/story_comments"
+                app:icon="@drawable/ic_comment"
+                app:iconGravity="textStart" />
+
             <!-- Giới Thiệu Nội Dung -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"

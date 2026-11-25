@@ -42,7 +42,9 @@ public class CommentsBottomSheet extends BottomSheetDialogFragment {
 
     private BottomSheetCommentsBinding binding;
     private CommentAdapter adapter;
+    private static final String ARG_STORY_ID = "story_id";
     private long chapterId;
+    private long storyId;
     private int currentPage = -1;
     private int totalPages = 1;
     private boolean loadingPage;
@@ -56,6 +58,14 @@ public class CommentsBottomSheet extends BottomSheetDialogFragment {
         Bundle args = new Bundle();
         args.putLong(ARG_CHAPTER_ID, chapterId);
         args.putInt(ARG_CHAPTER_NUMBER, chapterNumber);
+        CommentsBottomSheet sheet = new CommentsBottomSheet();
+        sheet.setArguments(args);
+        return sheet;
+    }
+
+    public static CommentsBottomSheet forStory(long storyId) {
+        Bundle args = new Bundle();
+        args.putLong(ARG_STORY_ID, storyId);
         CommentsBottomSheet sheet = new CommentsBottomSheet();
         sheet.setArguments(args);
         return sheet;
@@ -90,7 +100,8 @@ public class CommentsBottomSheet extends BottomSheetDialogFragment {
         super.onViewCreated(view, savedInstanceState);
         Bundle args = requireArguments();
         chapterId = args.getLong(ARG_CHAPTER_ID);
-        binding.tvCommentsTitle.setText("Bình luận · Chương " + args.getInt(ARG_CHAPTER_NUMBER, 1));
+        storyId = args.getLong(ARG_STORY_ID);
+        binding.tvCommentsTitle.setText(storyId > 0 ? getString(R.string.story_comments) : "Bình luận · Chương " + args.getInt(ARG_CHAPTER_NUMBER, 1));
 
         adapter = new CommentAdapter(this::confirmDelete);
         LinearLayoutManager layoutManager = new LinearLayoutManager(requireContext());
@@ -152,7 +163,9 @@ public class CommentsBottomSheet extends BottomSheetDialogFragment {
         if (authorization == null) return;
         loadingPage = true;
         if (page == 0) binding.progressComments.setVisibility(View.VISIBLE);
-        listCall = ApiClient.api().getComments(authorization, chapterId, page, PAGE_SIZE);
+        listCall = storyId > 0
+                ? ApiClient.api().getStoryComments(authorization, storyId, page, PAGE_SIZE)
+                : ApiClient.api().getComments(authorization, chapterId, page, PAGE_SIZE);
         listCall.enqueue(new Callback<PageResponse<CommentResponse>>() {
             @Override
             public void onResponse(Call<PageResponse<CommentResponse>> call,
@@ -193,8 +206,10 @@ public class CommentsBottomSheet extends BottomSheetDialogFragment {
 
         // khoá nút khi đang gửi để bấm 2 lần không tạo 2 bình luận
         binding.btnSendComment.setEnabled(false);
-        createCall = ApiClient.api().createComment(authorization, chapterId,
-                new CreateCommentRequest(content));
+        CreateCommentRequest request = new CreateCommentRequest(content);
+        createCall = storyId > 0
+                ? ApiClient.api().createStoryComment(authorization, storyId, request)
+                : ApiClient.api().createComment(authorization, chapterId, request);
         createCall.enqueue(new Callback<CommentResponse>() {
             @Override
             public void onResponse(Call<CommentResponse> call, Response<CommentResponse> response) {

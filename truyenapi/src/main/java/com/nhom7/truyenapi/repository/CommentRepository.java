@@ -30,6 +30,22 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
             @Param("currentUserId") Long currentUserId,
             Pageable pageable);
 
+    @Query(
+            value = """
+                    select new com.nhom7.truyenapi.dto.CommentResponse(
+                        c.id, u.id, u.displayName, c.content, c.createdAt,
+                        case when u.id = :currentUserId then true else false end)
+                    from Comment c
+                    join c.user u
+                    where c.story.id = :storyId and c.chapter is null
+                    order by c.id desc
+                    """,
+            countQuery = "select count(c.id) from Comment c where c.story.id = :storyId and c.chapter is null")
+    Page<CommentResponse> findItemsByStoryId(
+            @Param("storyId") Long storyId,
+            @Param("currentUserId") Long currentUserId,
+            Pageable pageable);
+
     @Query("""
             select new com.nhom7.truyenapi.dto.CommentResponse(
                 c.id, u.id, u.displayName, c.content, c.createdAt,

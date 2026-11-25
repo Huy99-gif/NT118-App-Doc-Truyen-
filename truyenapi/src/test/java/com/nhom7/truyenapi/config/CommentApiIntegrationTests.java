@@ -126,6 +126,24 @@ class CommentApiIntegrationTests {
     }
 
     @Test
+    void storyDiscussionIsSeparateFromChaptersAndOtherStories() throws Exception {
+        Story other = createStory(story.getAuthor(), "Other story");
+        postComment(authorizationA, chapter.getId(), "chapter").andExpect(status().isCreated());
+        mockMvc.perform(post("/stories/{id}/comments", story.getId()).header(AUTH_HEADER, authorizationA)
+                        .contentType(MediaType.APPLICATION_JSON).content(commentJson("story")))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.mine").value(true));
+        mockMvc.perform(get("/stories/{id}/comments", story.getId()).header(AUTH_HEADER, authorizationB))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.items[0].content").value("story"))
+                .andExpect(jsonPath("$.items[0].mine").value(false));
+        mockMvc.perform(get("/stories/{id}/comments", other.getId()).header(AUTH_HEADER, authorizationA))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.items").isEmpty());
+        mockMvc.perform(get("/chapters/{id}/comments", chapter.getId()).header(AUTH_HEADER, authorizationA))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.items[0].content").value("chapter"));
+    }
+
+    @Test
     void createValidatesContent() throws Exception {
         postComment(authorizationA, chapter.getId(), "   ")
                 .andExpect(status().isBadRequest())

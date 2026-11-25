@@ -38,6 +38,21 @@ public class CommentController {
         return ResponseEntity.status(HttpStatus.CREATED).body(commentService.create(chapterId, request));
     }
 
+    @GetMapping("/stories/{storyId}/comments")
+    public PageResponse<CommentResponse> listStory(
+            @PathVariable Long storyId,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
+        return commentService.listStory(storyId, page, size);
+    }
+
+    @PostMapping("/stories/{storyId}/comments")
+    public ResponseEntity<CommentResponse> createStory(
+            @PathVariable Long storyId,
+            @Valid @RequestBody CreateCommentRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(commentService.createStory(storyId, request));
+    }
+
     @DeleteMapping("/comments/{id}")
     public ResponseEntity<Void> remove(@PathVariable Long id) {
         commentService.remove(id);

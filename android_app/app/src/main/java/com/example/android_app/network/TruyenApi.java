@@ -122,6 +122,19 @@ public interface TruyenApi extends AuthApi {
             @Path("id") long chapterId,
             @Body CreateCommentRequest request);
 
+    @GET("stories/{id}/comments")
+    Call<PageResponse<CommentResponse>> getStoryComments(
+            @Header("Authorization") String authorization,
+            @Path("id") long storyId,
+            @Query("page") int page,
+            @Query("size") int size);
+
+    @POST("stories/{id}/comments")
+    Call<CommentResponse> createStoryComment(
+            @Header("Authorization") String authorization,
+            @Path("id") long storyId,
+            @Body CreateCommentRequest request);
+
     @DELETE("comments/{id}")
     Call<Void> deleteComment(
             @Header("Authorization") String authorization,

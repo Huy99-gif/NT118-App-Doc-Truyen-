@@ -103,6 +103,9 @@ public class StoryDetailActivity extends AppCompatActivity {
     }
 
     private void setupListeners() {
+        binding.btnStoryComments.setEnabled(storyId > 0);
+        binding.btnStoryComments.setOnClickListener(v -> CommentsBottomSheet.forStory(storyId)
+                .show(getSupportFragmentManager(), CommentsBottomSheet.TAG));
         binding.btnBack.setOnClickListener(v -> finish());
         binding.btnReadFirst.setOnClickListener(v -> {
             if (!chapters.isEmpty()) {
