@@ -43,14 +43,22 @@ public class LoginActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        boolean sessionExpired = getIntent().getBooleanExtra(
+                SessionManager.EXTRA_SESSION_EXPIRED, false)
+                || AuthPreferences.isSessionExpired(this);
+        // đã có token thì vào thẳng màn chính, không bắt đăng nhập lại (đọc offline vẫn mở được app)
+        if (!sessionExpired && AuthPreferences.getToken(this) != null) {
+            startActivity(new Intent(this, MainActivity.class));
+            finish();
+            return;
+        }
+
         binding = ActivityLoginBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
         requestLocalNetworkPermissionIfNeeded();
 
-        boolean sessionExpired = getIntent().getBooleanExtra(
-                SessionManager.EXTRA_SESSION_EXPIRED, false)
-                || AuthPreferences.isSessionExpired(this);
         AuthPreferences.setSessionExpired(this, false);
         // hiện toast báo hết hạn phiên nếu interceptor đá về login
         if (sessionExpired) {
@@ -137,6 +145,7 @@ public class LoginActivity extends AppCompatActivity {
                 }
 
                 ApiClient.onLoginSuccess(loginResponse.getToken());
+                AuthPreferences.saveOwnerKey(LoginActivity.this, loginResponse.getEmail());
                 Toast.makeText(LoginActivity.this, R.string.toast_login_success, Toast.LENGTH_SHORT).show();
                 startActivity(new Intent(LoginActivity.this, MainActivity.class));
                 finish();

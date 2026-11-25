@@ -17,6 +17,7 @@ import com.example.android_app.databinding.ActivityMainBinding;
 import com.example.android_app.model.PageResponse;
 import com.example.android_app.model.Story;
 import com.example.android_app.model.StorySummaryResponse;
+import com.example.android_app.model.UserResponse;
 import com.example.android_app.network.ApiClient;
 import com.example.android_app.util.ApiErrorParser;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -48,6 +49,26 @@ public class MainActivity extends AppCompatActivity {
         setupStoryTabs();
         setupBottomNavigation();
         loadStories(null);
+        ensureOwnerKey();
+    }
+
+    // máy đăng nhập từ trước bản có offline chưa lưu email: lấy một lần qua auth/me
+    private void ensureOwnerKey() {
+        String authorization = ApiClient.authorization(this);
+        if (authorization == null || AuthPreferences.getOwnerKey(this) != null) return;
+        ApiClient.auth().getCurrentUser(authorization).enqueue(new Callback<UserResponse>() {
+            @Override
+            public void onResponse(Call<UserResponse> call, Response<UserResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    AuthPreferences.saveOwnerKey(getApplicationContext(), response.body().getEmail());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<UserResponse> call, Throwable throwable) {
+                // thử lại ở lần mở app sau
+            }
+        });
     }
 
     @Override
