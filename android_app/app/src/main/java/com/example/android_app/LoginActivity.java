@@ -169,7 +169,10 @@ public class LoginActivity extends AppCompatActivity {
                 OfflineWork.enqueueSync(getApplicationContext(),
                         AuthPreferences.getOwnerKey(LoginActivity.this));
                 Toast.makeText(LoginActivity.this, R.string.toast_login_success, Toast.LENGTH_SHORT).show();
-                startActivity(new Intent(LoginActivity.this, MainActivity.class));
+                // xoá task để không còn màn đăng nhập / thư viện offline cũ phía sau màn chính
+                Intent main = new Intent(LoginActivity.this, MainActivity.class);
+                main.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(main);
                 finish();
             }
 

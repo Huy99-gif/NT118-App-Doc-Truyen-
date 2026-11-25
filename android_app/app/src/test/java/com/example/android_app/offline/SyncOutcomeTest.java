@@ -30,6 +30,15 @@ public class SyncOutcomeTest {
     }
 
     @Test
+    public void retry_givesUpAfterMaxAttempts_soOneRowCannotBlockQueue() {
+        assertEquals(SyncOutcome.RETRY,
+                SyncOutcome.withAttempts(SyncOutcome.RETRY, SyncOutcome.MAX_RETRIES - 1));
+        assertEquals(SyncOutcome.DROP,
+                SyncOutcome.withAttempts(SyncOutcome.RETRY, SyncOutcome.MAX_RETRIES));
+        assertEquals(SyncOutcome.DONE, SyncOutcome.withAttempts(SyncOutcome.DONE, 50));
+    }
+
+    @Test
     public void serverErrors_retry() {
         assertEquals(SyncOutcome.RETRY, SyncOutcome.fromHttpCode(500));
         assertEquals(SyncOutcome.RETRY, SyncOutcome.fromHttpCode(503));

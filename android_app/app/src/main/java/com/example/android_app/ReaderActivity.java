@@ -59,7 +59,6 @@ public class ReaderActivity extends AppCompatActivity {
     private boolean historyUpdatePending;
     private String ownerKey;
     private boolean offlineMode;
-    private boolean networkUnavailable;
     private boolean contentLoaded;
     private long[] chapterIds = new long[0];
     private int[] chapterNumbers = new int[0];
@@ -193,7 +192,6 @@ public class ReaderActivity extends AppCompatActivity {
                                    Response<ChapterDetailResponse> response) {
                 if (isFinishing() || isDestroyed() || call.isCanceled()) return;
                 binding.progressBarReader.setVisibility(View.GONE);
-                networkUnavailable = false;
                 if (!response.isSuccessful() || response.body() == null) {
                     Toast.makeText(ReaderActivity.this,
                             ApiErrorParser.getMessage(response, "Không tải được nội dung chương."),
@@ -211,7 +209,6 @@ public class ReaderActivity extends AppCompatActivity {
             public void onFailure(Call<ChapterDetailResponse> call, Throwable throwable) {
                 if (isFinishing() || isDestroyed() || call.isCanceled()) return;
                 if (throwable instanceof IOException) {
-                    networkUnavailable = true;
                     showChapterNotDownloaded();
                     return;
                 }
@@ -289,7 +286,6 @@ public class ReaderActivity extends AppCompatActivity {
                 if (call.isCanceled() || isFinishing() || isDestroyed()) return;
                 Log.w(TAG, "Không tải được danh sách chương để điều hướng.", throwable);
                 if (throwable instanceof IOException) {
-                    networkUnavailable = true;
                     loadChapterListFromDevice();
                 }
             }
@@ -348,7 +344,8 @@ public class ReaderActivity extends AppCompatActivity {
     }
 
     private void showComments() {
-        if (offlineMode || networkUnavailable) {
+        // chỉ khoá ở chế độ offline; khi online sheet bình luận tự báo lỗi mạng nếu có
+        if (offlineMode) {
             Toast.makeText(this, R.string.offline_comments_need_network, Toast.LENGTH_SHORT).show();
             return;
         }
@@ -403,7 +400,6 @@ public class ReaderActivity extends AppCompatActivity {
             public void onFailure(Call<BookmarkResponse> call, Throwable throwable) {
                 if (isFinishing() || isDestroyed() || call.isCanceled()) return;
                 if (throwable instanceof IOException) {
-                    networkUnavailable = true;
                     queueBookmark(note, offset);
                 } else {
                     Toast.makeText(ReaderActivity.this, R.string.error_server_unreachable,
@@ -497,7 +493,6 @@ public class ReaderActivity extends AppCompatActivity {
                 Log.w(TAG, "Không lưu được lịch sử đọc, sẽ đồng bộ khi có mạng.", throwable);
                 OfflineWork.enqueueSync(getApplicationContext(), owner);
                 if (isFinishing() || isDestroyed()) return;
-                if (throwable instanceof IOException) networkUnavailable = true;
                 finishHistorySave();
             }
         });

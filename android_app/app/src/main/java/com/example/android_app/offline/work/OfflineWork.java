@@ -89,8 +89,9 @@ public final class OfflineWork {
                 .setConstraints(networkConstraint())
                 .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, BACKOFF_SECONDS, TimeUnit.SECONDS)
                 .build();
+        // APPEND_OR_REPLACE: dữ liệu mới thêm khi một lần đồng bộ đang chạy vẫn có lượt gửi tiếp theo
         WorkManager.getInstance(context).enqueueUniqueWork(
-                syncWorkName(owner), ExistingWorkPolicy.KEEP, request);
+                syncWorkName(owner), ExistingWorkPolicy.APPEND_OR_REPLACE, request);
     }
 
     static DownloadedStoryEntity storyFrom(Data input, long now) {

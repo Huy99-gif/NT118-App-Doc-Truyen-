@@ -47,7 +47,8 @@ public class SyncWorker extends Worker {
                 Response<?> response = ApiClient.api().updateReadingHistory(authorization,
                         new UpdateReadingHistoryRequest(progress.storyId, progress.chapterId,
                                 progress.charOffset)).execute();
-                SyncOutcome outcome = SyncOutcome.fromHttpCode(response.code());
+                SyncOutcome outcome = SyncOutcome.withAttempts(
+                        SyncOutcome.fromHttpCode(response.code()), getRunAttemptCount());
                 if (outcome == SyncOutcome.RETRY) return Result.retry();
                 if (outcome == SyncOutcome.STOP_AUTH) return Result.failure();
                 if (outcome == SyncOutcome.DROP) {
@@ -62,7 +63,8 @@ public class SyncWorker extends Worker {
                 Response<?> response = ApiClient.api().createBookmark(authorization,
                         new CreateBookmarkRequest(bookmark.chapterId, bookmark.charOffset,
                                 bookmark.note)).execute();
-                SyncOutcome outcome = SyncOutcome.fromHttpCode(response.code());
+                SyncOutcome outcome = SyncOutcome.withAttempts(
+                        SyncOutcome.fromHttpCode(response.code()), getRunAttemptCount());
                 if (outcome == SyncOutcome.RETRY) return Result.retry();
                 if (outcome == SyncOutcome.STOP_AUTH) return Result.failure();
                 if (outcome == SyncOutcome.DROP) {

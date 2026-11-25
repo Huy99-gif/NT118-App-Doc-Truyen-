@@ -2,6 +2,7 @@ package com.example.android_app;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
 import android.content.Intent;
@@ -68,6 +69,44 @@ public class ReaderOfflineTest {
     public void notDownloadedChapter_showsMessage() throws Exception {
         assertEquals(context.getString(R.string.offline_chapter_not_downloaded),
                 contentShownFor(CHAPTER_ID + 1));
+    }
+
+    /**
+     * Đang online (có token, không offline_mode): một request lỗi mạng thoáng qua không được khoá
+     * nút bình luận cho tới khi mở lại màn đọc.
+     */
+    @Test
+    public void onlineReader_afterNetworkBlip_commentsStillOpen() throws Exception {
+        DownloadedChapterEntity second = new DownloadedChapterEntity();
+        second.ownerKey = OWNER;
+        second.storyId = STORY_ID;
+        second.chapterId = CHAPTER_ID + 1;
+        second.chapterNo = 2;
+        second.content = "chương 2";
+        dao.upsertChapters(Collections.singletonList(second));
+        AuthPreferences.saveToken(context, "token-khong-hop-le");
+        Intent intent = new Intent(context, ReaderActivity.class)
+                .putExtra("story_id", STORY_ID)
+                .putExtra("chapter_id", CHAPTER_ID)
+                .putExtra("story_name", "Truyện thử");
+        try (ActivityScenario<ReaderActivity> scenario = ActivityScenario.launch(intent)) {
+            // danh sách chương lấy từ máy (nút "sau" bật) nghĩa là request mạng đã lỗi
+            AtomicReference<Boolean> failedOver = new AtomicReference<>(false);
+            for (int i = 0; i < 250 && !failedOver.get(); i++) {
+                scenario.onActivity(a -> failedOver.set(a.findViewById(R.id.btnNextChapter).isEnabled()));
+                if (!failedOver.get()) Thread.sleep(100);
+            }
+            assertTrue("Request mạng chưa lỗi để chuyển sang danh sách trong máy", failedOver.get());
+
+            scenario.onActivity(a -> a.findViewById(R.id.btnComments).performClick());
+            Thread.sleep(500);
+            AtomicReference<Boolean> sheetShown = new AtomicReference<>(false);
+            scenario.onActivity(a -> sheetShown.set(a.getSupportFragmentManager()
+                    .findFragmentByTag(CommentsBottomSheet.TAG) != null));
+            assertTrue("Sheet bình luận không mở", sheetShown.get());
+        } finally {
+            AuthPreferences.clear(context);
+        }
     }
 
     private String contentShownFor(long chapterId) throws InterruptedException {

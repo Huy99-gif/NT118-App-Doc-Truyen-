@@ -11,6 +11,13 @@ public enum SyncOutcome {
     /** Hết phiên (401): dừng, giữ nguyên dữ liệu chờ đăng nhập lại. */
     STOP_AUTH;
 
+    /** Sau từng này lần chạy lại mà server vẫn lỗi 5xx thì bỏ bản ghi để không chặn cả hàng đợi. */
+    public static final int MAX_RETRIES = 5;
+
+    public static SyncOutcome withAttempts(SyncOutcome outcome, int runAttemptCount) {
+        return outcome == RETRY && runAttemptCount >= MAX_RETRIES ? DROP : outcome;
+    }
+
     public static SyncOutcome fromHttpCode(int code) {
         if (code >= 200 && code < 300) return DONE;
         if (code == 401) return STOP_AUTH;

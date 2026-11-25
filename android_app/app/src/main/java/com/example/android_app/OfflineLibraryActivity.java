@@ -18,7 +18,8 @@ public class OfflineLibraryActivity extends AppCompatActivity {
         ActivityOfflineLibraryBinding binding = ActivityOfflineLibraryBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
         binding.btnGoLogin.setOnClickListener(v -> {
-            startActivity(new Intent(this, LoginActivity.class));
+            // mở từ màn đăng nhập thì chỉ cần đóng lại; không tạo thêm LoginActivity thứ hai
+            if (isTaskRoot()) startActivity(new Intent(this, LoginActivity.class));
             finish();
         });
         if (savedInstanceState == null) {
