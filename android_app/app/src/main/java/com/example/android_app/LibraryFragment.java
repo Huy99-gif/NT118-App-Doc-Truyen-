@@ -40,6 +40,8 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class LibraryFragment extends Fragment {
+    public static final int TAB_DOWNLOADS = 3;
+    private static final String DOWNLOADS_TAG = "downloads";
     private FragmentLibraryBinding binding;
     private StoryAdapter storyAdapter;
     private BookmarkAdapter bookmarkAdapter;
@@ -75,12 +77,14 @@ public class LibraryFragment extends Fragment {
         binding.tabLayoutLibrary.addTab(binding.tabLayoutLibrary.newTab().setText("Tủ sách"));
         binding.tabLayoutLibrary.addTab(binding.tabLayoutLibrary.newTab().setText("Lịch sử đọc"));
         binding.tabLayoutLibrary.addTab(binding.tabLayoutLibrary.newTab().setText("Dấu trang"));
+        binding.tabLayoutLibrary.addTab(binding.tabLayoutLibrary.newTab().setText("Đã tải"));
         binding.tabLayoutLibrary.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
+                showDownloads(tab.getPosition() == TAB_DOWNLOADS);
                 if (tab.getPosition() == 0) loadSavedStories();
                 else if (tab.getPosition() == 1) loadReadingHistory();
-                else loadBookmarks();
+                else if (tab.getPosition() == 2) loadBookmarks();
             }
 
             @Override
@@ -89,6 +93,23 @@ public class LibraryFragment extends Fragment {
             @Override
             public void onTabReselected(TabLayout.Tab tab) {}
         });
+    }
+
+    // tab "Đã tải" đọc từ Room qua DownloadsFragment, che danh sách online phía dưới
+    private void showDownloads(boolean show) {
+        if (binding == null) return;
+        if (show) {
+            if (activeCall != null) activeCall.cancel();
+            binding.progressBarLibrary.setVisibility(View.GONE);
+            binding.tvEmptyLibrary.setVisibility(View.GONE);
+            if (getChildFragmentManager().findFragmentByTag(DOWNLOADS_TAG) == null) {
+                getChildFragmentManager().beginTransaction()
+                        .replace(R.id.downloadsContainer, DownloadsFragment.newInstance(false), DOWNLOADS_TAG)
+                        .commit();
+            }
+        }
+        binding.downloadsContainer.setVisibility(show ? View.VISIBLE : View.GONE);
+        binding.rvLibrary.setVisibility(show ? View.GONE : View.VISIBLE);
     }
 
     public void selectTab(int position) {

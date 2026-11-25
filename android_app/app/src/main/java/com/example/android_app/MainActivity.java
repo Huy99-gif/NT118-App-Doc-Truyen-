@@ -50,6 +50,8 @@ public class MainActivity extends AppCompatActivity {
         setupBottomNavigation();
         loadStories(null);
         ensureOwnerKey();
+        binding.btnOpenDownloads.setOnClickListener(v ->
+                openLibraryTab(LibraryFragment.TAB_DOWNLOADS));
     }
 
     // máy đăng nhập từ trước bản có offline chưa lưu email: lấy một lần qua auth/me
@@ -230,6 +232,7 @@ public class MainActivity extends AppCompatActivity {
         }
         binding.progressBar.setVisibility(View.VISIBLE);
         binding.tvEmpty.setVisibility(View.GONE);
+        binding.btnOpenDownloads.setVisibility(View.GONE);
         storiesCall = query == null
                 ? ApiClient.api().getStories(authorization, selectedType, selectedCategoryId, 0, 50)
                 : ApiClient.api().searchStories(authorization, query, null, null, 0, 50);
@@ -262,7 +265,13 @@ public class MainActivity extends AppCompatActivity {
             public void onFailure(Call<PageResponse<StorySummaryResponse>> call, Throwable throwable) {
                 if (isFinishing() || isDestroyed() || call.isCanceled()) return;
                 binding.progressBar.setVisibility(View.GONE);
-                binding.tvEmpty.setText(R.string.error_server_unreachable);
+                if (throwable instanceof java.io.IOException) {
+                    // mất mạng: chỉ đường sang truyện đã tải
+                    binding.tvEmpty.setText(R.string.offline_no_network);
+                    binding.btnOpenDownloads.setVisibility(View.VISIBLE);
+                } else {
+                    binding.tvEmpty.setText(R.string.error_server_unreachable);
+                }
                 binding.tvEmpty.setVisibility(View.VISIBLE);
             }
         });
